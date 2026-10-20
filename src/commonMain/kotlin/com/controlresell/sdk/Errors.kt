@@ -19,7 +19,7 @@ import kotlinx.io.IOException
  * @property params The error's parameters.
  * @property requestId The identifier to give the support.
  */
-open class ControlResellException(
+open class ControlResellError(
     val status: Int,
     val code: String,
     message: String,
@@ -29,31 +29,31 @@ open class ControlResellException(
 
 /** 400: the request is malformed. */
 class BadRequestException(code: String, message: String, params: Map<String, String>, requestId: String?) :
-    ControlResellException(400, code, message, params, requestId)
+    ControlResellError(400, code, message, params, requestId)
 
 /** 401: no credential, or an unknown, revoked or expired one. */
 class AuthenticationException(code: String, message: String, params: Map<String, String>, requestId: String?) :
-    ControlResellException(401, code, message, params, requestId)
+    ControlResellError(401, code, message, params, requestId)
 
 /** 402: the seller's plan does not include this. */
 class PaymentRequiredException(code: String, message: String, params: Map<String, String>, requestId: String?) :
-    ControlResellException(402, code, message, params, requestId)
+    ControlResellError(402, code, message, params, requestId)
 
 /** 403: the API key does not grant the scope the route requires. */
 class PermissionDeniedException(code: String, message: String, params: Map<String, String>, requestId: String?) :
-    ControlResellException(403, code, message, params, requestId)
+    ControlResellError(403, code, message, params, requestId)
 
 /** 404: no such resource for this seller. */
 class NotFoundException(code: String, message: String, params: Map<String, String>, requestId: String?) :
-    ControlResellException(404, code, message, params, requestId)
+    ControlResellError(404, code, message, params, requestId)
 
 /** 409: an `Idempotency-Key` used with another request, or still in flight. */
 class ConflictException(code: String, message: String, params: Map<String, String>, requestId: String?) :
-    ControlResellException(409, code, message, params, requestId)
+    ControlResellError(409, code, message, params, requestId)
 
 /** 422: the request is well formed but refused. */
 class UnprocessableEntityException(code: String, message: String, params: Map<String, String>, requestId: String?) :
-    ControlResellException(422, code, message, params, requestId)
+    ControlResellError(422, code, message, params, requestId)
 
 /**
  * 429: the rate limit of the API key is reached.
@@ -66,11 +66,11 @@ class RateLimitException(
     params: Map<String, String>,
     requestId: String?,
     val retryAfterSeconds: Long?,
-) : ControlResellException(429, code, message, params, requestId)
+) : ControlResellError(429, code, message, params, requestId)
 
 /** 5xx: an error of the API; retry later. */
 class ServerException(status: Int, code: String, message: String, params: Map<String, String>, requestId: String?) :
-    ControlResellException(status, code, message, params, requestId)
+    ControlResellError(status, code, message, params, requestId)
 
 /** The API could not be reached (network, DNS, TLS), after the retries. */
 class ControlResellConnectionException(cause: Throwable) :
@@ -85,7 +85,7 @@ internal fun HttpClientConfig<*>.installErrors() {
     }
 }
 
-internal suspend fun HttpResponse.toException(): ControlResellException {
+internal suspend fun HttpResponse.toException(): ControlResellError {
     val status = status.value
     val error = runCatching { ApiClient.JSON_DEFAULT.decodeFromString(ErrorResponse.serializer(), bodyAsText()).error }
         .getOrNull()
@@ -103,6 +103,6 @@ internal suspend fun HttpResponse.toException(): ControlResellException {
         422 -> UnprocessableEntityException(code, message, params, requestId)
         429 -> RateLimitException(code, message, params, requestId, headers[HttpHeaders.RetryAfter]?.toLongOrNull())
         in 500..599 -> ServerException(status, code, message, params, requestId)
-        else -> ControlResellException(status, code, message, params, requestId)
+        else -> ControlResellError(status, code, message, params, requestId)
     }
 }
