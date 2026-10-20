@@ -24,7 +24,7 @@ import io.ktor.serialization.kotlinx.json.json
  *
  * Calls are retried on a rate limit (after `Retry-After`), on a gateway or availability error (502, 503, 504) and on a
  * network error; a `POST` always carries the same `Idempotency-Key` across its retries. Any other error is thrown as a
- * [ControlResellException]. The client holds no global state: create one per API key.
+ * [ControlResellError]. The client holds no global state: create one per API key.
  *
  * @param apiKey The API key; `null` reads the `CONTROLRESELL_API_KEY` environment variable.
  * @param baseUrl The API's address.

@@ -107,6 +107,26 @@ class ControlResellTest {
     }
 
     @Test
+    fun conflict_isRetriedOnlyWhenIdempotencyInProgress() = runTest {
+        var calls = 0
+        assertFailsWith<ConflictException> {
+            client { calls++; error(HttpStatusCode.Conflict, "idempotency_key_reused") }.me.getMe()
+        }
+        assertEquals(1, calls, "another 409 is not retried")
+
+        calls = 0
+        val e = runCatching {
+            client {
+                calls++
+                if (calls == 1) error(HttpStatusCode.Conflict, "idempotency_in_progress")
+                else respond("""{"id":1,"username":"u","currency":"EUR"}""", HttpStatusCode.OK, jsonHeaders)
+            }.me.getMe()
+        }.exceptionOrNull()
+        assertNull(e)
+        assertEquals(2, calls)
+    }
+
+    @Test
     fun serverError_ofAPost_isNotRetried() = runTest {
         var calls = 0
         assertFailsWith<ServerException> {
