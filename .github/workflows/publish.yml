@@ -1,0 +1,17 @@
+name: Publish
+# Manual only. Publishing to Maven Central is not enabled yet: this builds every publication and installs it in the
+# runner's local Maven repository, without any registry credential.
+on:
+  workflow_dispatch:
+jobs:
+  publish:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: Build the publications (local only)
+        run: ./gradlew --no-daemon publishToMavenLocal
