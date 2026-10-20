@@ -17,7 +17,7 @@ import io.ktor.serialization.kotlinx.json.json
  * A client of the ControlResell public API, for one API key.
  *
  * ```kotlin
- * val client = ControlResell(apiKey = "cr_live_...", engine = CIO.create())
+ * val client = ControlResell(apiKey = "cr_live_...")
  * val me = client.me.getMe().body()
  * client.listAllItems(sold = false).collect { println(it.name) }
  * ```
@@ -28,7 +28,8 @@ import io.ktor.serialization.kotlinx.json.json
  *
  * @param apiKey The API key; `null` reads the `CONTROLRESELL_API_KEY` environment variable.
  * @param baseUrl The API's address.
- * @param engine The Ktor engine (CIO, Darwin, OkHttp, WinHttp…); `null` lets Ktor find one on the classpath (JVM only).
+ * @param engine Your own Ktor engine (CIO, OkHttp, MockEngine…); `null` uses the platform's default engine, which the SDK
+ * brings with it (`ktor-client-engine-defaults`), so no engine dependency is needed.
  * @param retry How calls are retried.
  */
 class ControlResell(
