@@ -8,8 +8,9 @@ val me = client.me.getMe().body()
 client.listAllItems(sold = false).collect { println(it.name) }
 
 // Writes (API key with items:write / conversations:write); each takes an Idempotency-Key, kept across the retries.
-client.items.publishItem(42, Uuid.random().toString(), PublishRequest(accountIds = listOf(accountId)))
-client.conversations.sendMessage(conversationId, Uuid.random().toString(), SendMessageRequest(text = "Hello!"))
+client.items.publishItem(42, Uuid.random().toString(), PublishRequest(accountIds = listOf("ACCOUNT_ID")))
+client.conversations.sendMessage("CONVERSATION_ID", Uuid.random().toString(), SendMessageRequest(text = "Hello!"))
+// republishItem takes a RepublishRequest(): empty, it republishes on every account the item is listed on.
 ```
 
 No Ktor engine to add: the SDK brings the default engine of each platform. To use your own, pass `engine = CIO.create()` (or any `HttpClientEngine`).

@@ -14,6 +14,7 @@ import io.ktor.http.headersOf
 import com.controlresell.sdk.generated.models.Money
 import com.controlresell.sdk.generated.models.PriceDropRequest
 import com.controlresell.sdk.generated.models.PublishRequest
+import com.controlresell.sdk.generated.models.RepublishRequest
 import com.controlresell.sdk.generated.models.SendMessageRequest
 import com.controlresell.sdk.generated.models.SendOfferRequest
 import kotlinx.coroutines.flow.toList
@@ -198,11 +199,20 @@ class ControlResellTest {
     @Test
     fun priceDropAndRepublish_postToTheirRoutes() = runTest {
         val paths = mutableListOf<String>()
-        val sdk = client { request -> paths += request.url.encodedPath; respond(ACTION, HttpStatusCode.Accepted, jsonHeaders) }
+        val keys = mutableListOf<String?>()
+        val bodies = mutableListOf<String>()
+        val sdk = client { request ->
+            paths += request.url.encodedPath
+            keys += request.headers[IDEMPOTENCY_KEY_HEADER]
+            bodies += (request.body as io.ktor.http.content.TextContent).text
+            respond(ACTION, HttpStatusCode.Accepted, jsonHeaders)
+        }
         sdk.items.dropItemPrice(7, "k1", PriceDropRequest(type = "PERCENT", value = "10"))
-        sdk.items.republishItem(7, "k2")
+        sdk.items.republishItem(7, "k2", RepublishRequest())
 
         assertEquals(listOf("/api/public/v1/items/7/price-drop", "/api/public/v1/items/7/republish"), paths)
+        assertEquals(listOf<String?>("k1", "k2"), keys)
+        assertEquals(listOf("""{"type":"PERCENT","value":"10"}""", "{}"), bodies)
     }
 
     @Test
