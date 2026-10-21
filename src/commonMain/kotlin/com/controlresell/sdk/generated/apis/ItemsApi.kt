@@ -27,6 +27,10 @@ import com.controlresell.sdk.generated.models.ErrorResponse
 import com.controlresell.sdk.generated.models.Item
 import com.controlresell.sdk.generated.models.ItemPage
 import com.controlresell.sdk.generated.models.ListingPage
+import com.controlresell.sdk.generated.models.PriceDropRequest
+import com.controlresell.sdk.generated.models.PublishRequest
+import com.controlresell.sdk.generated.models.RepublishRequest
+import com.controlresell.sdk.generated.models.ScheduledAction
 
 import com.controlresell.sdk.generated.infrastructure.*
 import io.ktor.client.HttpClient
@@ -56,6 +60,74 @@ open class ItemsApi : ApiClient {
         baseUrl: String,
         httpClient: HttpClient
     ): super(baseUrl = baseUrl, httpClient = httpClient)
+
+    /**
+     * Delete an item from the seller&#39;s stock
+     * Deletes one item of the seller&#39;s stock, with its photos links, labels and history. An item still online on a marketplace is refused (&#x60;409 item_still_listed&#x60;): its listings would stay online without ControlResell. Requires &#x60;items:write&#x60;.
+     * @param id The item&#39;s identifier, a number.
+     * @return void
+     */
+    open suspend fun deleteItem(id: kotlin.Long): HttpResponse<Unit> {
+
+        val localVariableAuthNames = listOf<String>("bearerAuth")
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.DELETE,
+            "/api/public/v1/items/{id}".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = true,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
+     * Lower the price of an item&#39;s listings
+     * Schedules a price drop of the item&#39;s existing listings, now, like the price drop of the app: the listings are updated, not republished. &#x60;value&#x60; is what is removed from each listing&#39;s current price, never the new price. Without &#x60;accountIds&#x60;, every account the item is online on. Requires &#x60;items:write&#x60; and an &#x60;Idempotency-Key&#x60;.
+     * @param id The item&#39;s identifier, a number.
+     * @param idempotencyKey 1 to 255 characters, unique per write: a retry with the same key and the same request answers the first response again (&#x60;Idempotent-Replayed: true&#x60;), without running the write twice.
+     * @param priceDropRequest 
+     * @return ScheduledAction
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun dropItemPrice(id: kotlin.Long, idempotencyKey: kotlin.String, priceDropRequest: PriceDropRequest): HttpResponse<ScheduledAction> {
+
+        val localVariableAuthNames = listOf<String>("bearerAuth")
+
+        val localVariableBody = priceDropRequest
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+        idempotencyKey?.apply { localVariableHeaders["Idempotency-Key"] = this.toString() }
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/public/v1/items/{id}/price-drop".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = true,
+        )
+
+        return jsonRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
 
     /**
      * Read one item
@@ -161,6 +233,78 @@ open class ItemsApi : ApiClient {
             localVariableAuthNames
         ).wrap()
     }
+
+
+    /**
+     * Publish an item on the seller&#39;s accounts
+     * Schedules the publication of one item of the seller&#39;s stock on the given marketplace accounts, now. The publication runs on the account&#39;s browser: read its result on &#x60;GET /items/{id}/listings&#x60;. To cross-list an item (\&quot;list it on eBay\&quot;), call this route with that account: this API never relays a marketplace&#39;s own API. Publishing one item on several accounts of the same marketplace risks a strike from it: name only the accounts you mean. Requires &#x60;items:write&#x60; and an &#x60;Idempotency-Key&#x60;.
+     * @param id The item&#39;s identifier, a number.
+     * @param idempotencyKey 1 to 255 characters, unique per write: a retry with the same key and the same request answers the first response again (&#x60;Idempotent-Replayed: true&#x60;), without running the write twice.
+     * @param publishRequest 
+     * @return ScheduledAction
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun publishItem(id: kotlin.Long, idempotencyKey: kotlin.String, publishRequest: PublishRequest): HttpResponse<ScheduledAction> {
+
+        val localVariableAuthNames = listOf<String>("bearerAuth")
+
+        val localVariableBody = publishRequest
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+        idempotencyKey?.apply { localVariableHeaders["Idempotency-Key"] = this.toString() }
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/public/v1/items/{id}/publish".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = true,
+        )
+
+        return jsonRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+
+    /**
+     * Republish an item on the seller&#39;s accounts
+     * Schedules the republication of one item of the seller&#39;s stock, now, exactly as the app and the MCP tool &#x60;republish_items&#x60; do: ControlResell deletes the listing and publishes it again from the item it holds, with the same safeguards (republication pace, publication guards). eBay, Shopify and Etsy do not republish: their accounts are refused (&#x60;republish_not_supported&#x60;). Without &#x60;accountIds&#x60;, every account the item is listed on. The republication runs on the account&#39;s browser: read its result on &#x60;GET /items/{id}/listings&#x60;.  This API never relays a marketplace&#39;s own API (Vinted, eBay…): every write runs a ControlResell use case on an item of the seller&#39;s stock. To cross-list an item on another account or marketplace (\&quot;list it on eBay\&quot;), call &#x60;POST /items/{id}/publish&#x60; with that account. Requires &#x60;items:write&#x60; and an &#x60;Idempotency-Key&#x60;; costs 5 units of the rate limit.
+     * @param id The item&#39;s identifier, a number.
+     * @param idempotencyKey 1 to 255 characters, unique per write: a retry with the same key and the same request answers the first response again (&#x60;Idempotent-Replayed: true&#x60;), without running the write twice.
+     * @param republishRequest  (optional)
+     * @return ScheduledAction
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun republishItem(id: kotlin.Long, idempotencyKey: kotlin.String, republishRequest: RepublishRequest? = null): HttpResponse<ScheduledAction> {
+
+        val localVariableAuthNames = listOf<String>("bearerAuth")
+
+        val localVariableBody = republishRequest
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+        idempotencyKey?.apply { localVariableHeaders["Idempotency-Key"] = this.toString() }
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/public/v1/items/{id}/republish".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = true,
+        )
+
+        return jsonRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
 
 
 }

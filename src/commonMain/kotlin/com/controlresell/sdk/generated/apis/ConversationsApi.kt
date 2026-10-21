@@ -26,7 +26,10 @@ package com.controlresell.sdk.generated.apis
 import com.controlresell.sdk.generated.models.Conversation
 import com.controlresell.sdk.generated.models.ConversationPage
 import com.controlresell.sdk.generated.models.ErrorResponse
+import com.controlresell.sdk.generated.models.Message
 import com.controlresell.sdk.generated.models.MessagePage
+import com.controlresell.sdk.generated.models.SendMessageRequest
+import com.controlresell.sdk.generated.models.SendOfferRequest
 
 import com.controlresell.sdk.generated.infrastructure.*
 import io.ktor.client.HttpClient
@@ -165,6 +168,78 @@ open class ConversationsApi : ApiClient {
             localVariableAuthNames
         ).wrap()
     }
+
+
+    /**
+     * Send a message to the buyer
+     * Sends a text message in one of the seller&#39;s conversations. The message is created at once and sent by the account&#39;s browser: its &#x60;status&#x60; follows the sending (read it on &#x60;GET /conversations/{id}/messages&#x60;). Requires &#x60;conversations:write&#x60; and an &#x60;Idempotency-Key&#x60;.
+     * @param id The conversation&#39;s identifier, a UUID.
+     * @param idempotencyKey 1 to 255 characters, unique per write: a retry with the same key and the same request answers the first response again (&#x60;Idempotent-Replayed: true&#x60;), without running the write twice.
+     * @param sendMessageRequest 
+     * @return Message
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun sendMessage(id: kotlin.String, idempotencyKey: kotlin.String, sendMessageRequest: SendMessageRequest): HttpResponse<Message> {
+
+        val localVariableAuthNames = listOf<String>("bearerAuth")
+
+        val localVariableBody = sendMessageRequest
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+        idempotencyKey?.apply { localVariableHeaders["Idempotency-Key"] = this.toString() }
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/public/v1/conversations/{id}/messages".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = true,
+        )
+
+        return jsonRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+
+    /**
+     * Make the buyer a price offer
+     * Sends a price offer in one of the seller&#39;s conversations, in the currency of its account (EUR accounts only for now: &#x60;offer_currency_not_supported&#x60; otherwise). The offer is created at once and sent by the account&#39;s browser. Requires &#x60;conversations:write&#x60; and an &#x60;Idempotency-Key&#x60;.
+     * @param id The conversation&#39;s identifier, a UUID.
+     * @param idempotencyKey 1 to 255 characters, unique per write: a retry with the same key and the same request answers the first response again (&#x60;Idempotent-Replayed: true&#x60;), without running the write twice.
+     * @param sendOfferRequest 
+     * @return Message
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun sendOffer(id: kotlin.String, idempotencyKey: kotlin.String, sendOfferRequest: SendOfferRequest): HttpResponse<Message> {
+
+        val localVariableAuthNames = listOf<String>("bearerAuth")
+
+        val localVariableBody = sendOfferRequest
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+        idempotencyKey?.apply { localVariableHeaders["Idempotency-Key"] = this.toString() }
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/public/v1/conversations/{id}/offers".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = true,
+        )
+
+        return jsonRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
 
 
 }
