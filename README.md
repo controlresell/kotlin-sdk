@@ -7,7 +7,7 @@ val client = ControlResell(apiKey = "cr_live_...") // or set CONTROLRESELL_API_K
 val me = client.me.getMe().body()
 client.listAllItems(sold = false).collect { println(it.name) }
 
-client.listAllOrders(bucket = "to_send").collect { println(it.id) } // needs the orders:read scope; also client.orders.getOrder(id), listOrderLabels(id), listAllLabelsToShip()
+client.listAllOrders(bucket = "to_send").collect { println(it.id) } // needs the orders:read scope; also client.orders.getOrder(id), listOrderLabels(id)
 
 // Writes (API key with items:write / conversations:write); each takes an Idempotency-Key, kept across the retries.
 client.items.createItem(Uuid.random().toString(), ItemCreateRequest(name = "Jacket")) // items.updateItem(42, ItemUpdateRequest(...)) patches
