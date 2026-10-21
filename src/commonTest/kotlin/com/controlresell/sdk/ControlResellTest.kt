@@ -7,9 +7,15 @@ import io.ktor.client.request.HttpRequestData
 import io.ktor.client.request.HttpResponseData
 import io.ktor.client.request.post
 import io.ktor.client.statement.bodyAsText
+import io.ktor.http.HttpMethod
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.headersOf
+import com.controlresell.sdk.generated.models.Money
+import com.controlresell.sdk.generated.models.PriceDropRequest
+import com.controlresell.sdk.generated.models.PublishRequest
+import com.controlresell.sdk.generated.models.SendMessageRequest
+import com.controlresell.sdk.generated.models.SendOfferRequest
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -163,6 +169,62 @@ class ControlResellTest {
         assertNull(item.purchasePrice)
     }
 
+    @Test
+    fun publishItem_postsTheAccounts_withTheCallersKey() = runTest {
+        val requests = mutableListOf<HttpRequestData>()
+        val action = client { request ->
+            requests += request
+            respond(ACTION, HttpStatusCode.Accepted, jsonHeaders)
+        }.items.publishItem(7, "my-key", PublishRequest(accountIds = listOf(ACCOUNT))).body()
+
+        assertEquals(7L, action.itemId)
+        assertEquals(HttpMethod.Post, requests.single().method)
+        assertEquals("/api/public/v1/items/7/publish", requests.single().url.encodedPath)
+        assertEquals("my-key", requests.single().headers[IDEMPOTENCY_KEY_HEADER])
+    }
+
+    @Test
+    fun publishItem_keepsTheSameKeyAcrossRetries() = runTest {
+        val keys = mutableListOf<String?>()
+        client { request ->
+            keys += request.headers[IDEMPOTENCY_KEY_HEADER]
+            if (keys.size < 2) error(HttpStatusCode.ServiceUnavailable, "idempotency_unavailable")
+            else respond(ACTION, HttpStatusCode.Accepted, jsonHeaders)
+        }.items.publishItem(7, "k", PublishRequest(accountIds = listOf(ACCOUNT)))
+
+        assertEquals(listOf<String?>("k", "k"), keys)
+    }
+
+    @Test
+    fun priceDropAndRepublish_postToTheirRoutes() = runTest {
+        val paths = mutableListOf<String>()
+        val sdk = client { request -> paths += request.url.encodedPath; respond(ACTION, HttpStatusCode.Accepted, jsonHeaders) }
+        sdk.items.dropItemPrice(7, "k1", PriceDropRequest(type = "PERCENT", value = "10"))
+        sdk.items.republishItem(7, "k2")
+
+        assertEquals(listOf("/api/public/v1/items/7/price-drop", "/api/public/v1/items/7/republish"), paths)
+    }
+
+    @Test
+    fun deleteItem_resolvesOn204_andIsTypedOn409() = runTest {
+        var method: HttpMethod? = null
+        client { request -> method = request.method; respond("", HttpStatusCode.NoContent) }.items.deleteItem(7)
+        assertEquals(HttpMethod.Delete, method)
+
+        val e = assertFailsWith<ConflictException> { client { error(HttpStatusCode.Conflict, "item_still_listed") }.items.deleteItem(7) }
+        assertEquals("item_still_listed", e.code)
+    }
+
+    @Test
+    fun sendMessageAndSendOffer_postToTheConversation() = runTest {
+        val paths = mutableListOf<String>()
+        val sdk = client { request -> paths += request.url.encodedPath; respond(MESSAGE, HttpStatusCode.Created, jsonHeaders) }
+        sdk.conversations.sendMessage(ACCOUNT, "k1", SendMessageRequest(text = "hi"))
+        sdk.conversations.sendOffer(ACCOUNT, "k2", SendOfferRequest(price = Money(amount = "12.50", currency = "EUR")))
+
+        assertEquals(listOf("/api/public/v1/conversations/$ACCOUNT/messages", "/api/public/v1/conversations/$ACCOUNT/offers"), paths)
+    }
+
     private fun item(id: Long, sex: String = "WOMEN") = """{"id":$id,"name":"n","sku":null,"description":null,"photos":[],
         "categoryId":null,"brandId":null,"sizeId":null,"colorIds":[],"state":null,"sex":"$sex","labels":[],"sold":false,
         "estimatedPrice":{"amount":"12.50","currency":"EUR"},"purchasePrice":null,"purchaseDate":null,"sellingPrice":null,
@@ -170,5 +232,8 @@ class ControlResellTest {
 
     private companion object {
         const val KEY = "cr_test_secret"
+        const val ACCOUNT = "3f0c2a52-0b0c-4d65-9f40-2d2d3b1f4a10"
+        const val ACTION = """{"itemId":7,"action":"PUBLISH","accountIds":[],"scheduledAt":"2026-10-21T10:00:00Z"}"""
+        const val MESSAGE = """{"id":"$ACCOUNT","conversationId":"$ACCOUNT","author":"SELLER","type":"TEXT","status":"SENT","body":"hi","createdAt":"2026-10-21T10:00:00Z"}"""
     }
 }
