@@ -4,6 +4,7 @@ import com.controlresell.sdk.generated.apis.AccountsApi
 import com.controlresell.sdk.generated.apis.ConversationsApi
 import com.controlresell.sdk.generated.apis.ItemsApi
 import com.controlresell.sdk.generated.apis.MeApi
+import com.controlresell.sdk.generated.apis.OrdersApi
 import com.controlresell.sdk.generated.infrastructure.ApiClient
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
@@ -56,6 +57,9 @@ class ControlResell(
 
     /** The conversations with buyers. */
     val conversations: ConversationsApi = ConversationsApi(baseUrl, httpClient).authenticated()
+
+    /** The seller's sales and purchases. */
+    val orders: OrdersApi = OrdersApi(baseUrl, httpClient).authenticated()
 
     private fun <T : ApiClient> T.authenticated(): T = apply { setBearerToken(key) }
 

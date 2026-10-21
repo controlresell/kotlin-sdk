@@ -10,7 +10,10 @@ import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.content.OutgoingContent
 import io.ktor.http.headersOf
+import com.controlresell.sdk.generated.models.ItemCreateRequest
+import com.controlresell.sdk.generated.models.ItemUpdateRequest
 import com.controlresell.sdk.generated.models.Money
 import com.controlresell.sdk.generated.models.PriceDropRequest
 import com.controlresell.sdk.generated.models.PublishRequest
@@ -25,6 +28,7 @@ import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+import kotlin.time.Instant
 
 class ControlResellTest {
 
@@ -234,6 +238,56 @@ class ControlResellTest {
 
         assertEquals(listOf("/api/public/v1/conversations/$ACCOUNT/messages", "/api/public/v1/conversations/$ACCOUNT/offers"), paths)
     }
+
+    @Test
+    fun createItem_postsTheItemWithTheCallersKey_andUpdateItemPatchesItWithoutOne() = runTest {
+        val requests = mutableListOf<HttpRequestData>()
+        val sdk = client { request ->
+            requests += request
+            respond(item(7), if (request.method == HttpMethod.Post) HttpStatusCode.Created else HttpStatusCode.OK, jsonHeaders)
+        }
+        assertEquals(7L, sdk.items.createItem("k1", ItemCreateRequest(name = "n")).body().id)
+        assertEquals(7L, sdk.items.updateItem(7, ItemUpdateRequest(name = "m")).body().id)
+
+        assertEquals(HttpMethod.Post, requests[0].method)
+        assertEquals("/api/public/v1/items", requests[0].url.encodedPath)
+        assertEquals("k1", requests[0].headers[IDEMPOTENCY_KEY_HEADER])
+        assertEquals(HttpMethod.Patch, requests[1].method)
+        assertEquals("/api/public/v1/items/7", requests[1].url.encodedPath)
+        assertNull(requests[1].headers[IDEMPOTENCY_KEY_HEADER])
+        assertEquals("""{"name":"m"}""", (requests[1].body as OutgoingContent.ByteArrayContent).bytes().decodeToString().filterNot { it.isWhitespace() })
+    }
+
+    @Test
+    fun getOrderAndListOrderLabels_readTheOrderAndItsLabels() = runTest {
+        val paths = mutableListOf<String>()
+        val sdk = client { request ->
+            paths += request.url.encodedPath
+            respond(if (request.url.encodedPath.endsWith("/labels")) """{"data":[],"nextCursor":null}""" else order("p1"), HttpStatusCode.OK, jsonHeaders)
+        }
+        assertEquals("p1", sdk.orders.getOrder(ACCOUNT).body().platformOrderId)
+        assertTrue(sdk.orders.listOrderLabels(ACCOUNT).body().`data`.isEmpty())
+        assertEquals(listOf("/api/public/v1/orders/$ACCOUNT", "/api/public/v1/orders/$ACCOUNT/labels"), paths)
+    }
+
+    @Test
+    fun listAllOrders_readsEveryPage_withTheSameFilters() = runTest {
+        val seen = mutableListOf<Map<String, String?>>()
+        val orders = client { request ->
+            val p = request.url.parameters
+            seen += mapOf("cursor" to p["cursor"], "bucket" to p["bucket"], "platform" to p["platform"], "from" to p["from"])
+            val (id, next) = if (p["cursor"] == null) "a" to "\"c2\"" else "b" to "null"
+            respond("""{"data":[${order(id)}],"nextCursor":$next}""", HttpStatusCode.OK, jsonHeaders)
+        }.listAllOrders(bucket = "to_send", platform = "VINTED", from = Instant.parse("2026-10-01T00:00:00Z")).toList()
+
+        assertEquals(listOf("a", "b"), orders.map { it.platformOrderId })
+        assertEquals(listOf(null, "c2"), seen.map { it["cursor"] })
+        assertTrue(seen.all { it["bucket"] == "to_send" && it["platform"] == "VINTED" && it["from"]?.startsWith("2026-10-01") == true }, seen.toString())
+    }
+
+    private fun order(platformOrderId: String) = """{"id":"$ACCOUNT","accountId":"$ACCOUNT","type":"SALE","status":"PAID",
+        "platformOrderId":"$platformOrderId","price":{"amount":"12.50","currency":"EUR"},"prepared":false,
+        "date":"2026-10-21T10:00:00Z","items":[]}"""
 
     private fun item(id: Long, sex: String = "WOMEN") = """{"id":$id,"name":"n","sku":null,"description":null,"photos":[],
         "categoryId":null,"brandId":null,"sizeId":null,"colorIds":[],"state":null,"sex":"$sex","labels":[],"sold":false,

@@ -4,8 +4,10 @@ import com.controlresell.sdk.generated.models.Account
 import com.controlresell.sdk.generated.models.Conversation
 import com.controlresell.sdk.generated.models.Item
 import com.controlresell.sdk.generated.models.Message
+import com.controlresell.sdk.generated.models.Order
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlin.time.Instant
 
 /**
  * One page of a list: its elements and the cursor of the next page (`null` on the last one).
@@ -48,4 +50,22 @@ fun ControlResell.listAllConversations(unread: Boolean? = null, accountId: Strin
 fun ControlResell.listAllConversationMessages(id: String, pageSize: Int? = null): Flow<Message> = paginate { cursor ->
     conversations.listConversationMessages(id = id, limit = pageSize, cursor = cursor).body()
         .let { Page(it.`data`, it.nextCursor) }
+}
+
+/**
+ * Every order of the seller, the most recent first, filtered as
+ * [OrdersApi.listOrders][com.controlresell.sdk.generated.apis.OrdersApi.listOrders] (`bucket` is `to_send` or `to_pickup`;
+ * [from] is inclusive and [to] exclusive).
+ */
+fun ControlResell.listAllOrders(
+    bucket: String? = null,
+    platform: String? = null,
+    accountId: String? = null,
+    from: Instant? = null,
+    to: Instant? = null,
+    pageSize: Int? = null,
+): Flow<Order> = paginate { cursor ->
+    orders.listOrders(
+        limit = pageSize, cursor = cursor, bucket = bucket, platform = platform, accountId = accountId, from = from, to = to,
+    ).body().let { Page(it.`data`, it.nextCursor) }
 }

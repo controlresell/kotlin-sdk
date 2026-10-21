@@ -25,7 +25,9 @@ package com.controlresell.sdk.generated.apis
 
 import com.controlresell.sdk.generated.models.ErrorResponse
 import com.controlresell.sdk.generated.models.Item
+import com.controlresell.sdk.generated.models.ItemCreateRequest
 import com.controlresell.sdk.generated.models.ItemPage
+import com.controlresell.sdk.generated.models.ItemUpdateRequest
 import com.controlresell.sdk.generated.models.ListingPage
 import com.controlresell.sdk.generated.models.PriceDropRequest
 import com.controlresell.sdk.generated.models.PublishRequest
@@ -60,6 +62,41 @@ open class ItemsApi : ApiClient {
         baseUrl: String,
         httpClient: HttpClient
     ): super(baseUrl = baseUrl, httpClient = httpClient)
+
+    /**
+     * Create an item in the seller&#39;s stock
+     * Creates one item in the seller&#39;s ControlResell stock, unsold unless &#x60;sold&#x60; says otherwise, without publishing it: publish it with &#x60;POST /items/{id}/publish&#x60;. Only &#x60;name&#x60; is required. The amounts are &#x60;{amount, currency}&#x60; in the item&#39;s currency (EUR for a new item; another currency is refused with &#x60;422 currency_mismatch&#x60;). &#x60;photoIds&#x60; are files already in the seller&#39;s library: another seller&#39;s, or an unknown one, is &#x60;404 photo_not_found&#x60;. A label the seller does not have yet is created. Requires &#x60;items:write&#x60; and an &#x60;Idempotency-Key&#x60;.
+     * @param idempotencyKey 1 to 255 characters, unique per write: a retry with the same key and the same request answers the first response again (&#x60;Idempotent-Replayed: true&#x60;), without running the write twice.
+     * @param itemCreateRequest 
+     * @return Item
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun createItem(idempotencyKey: kotlin.String, itemCreateRequest: ItemCreateRequest): HttpResponse<Item> {
+
+        val localVariableAuthNames = listOf<String>("bearerAuth")
+
+        val localVariableBody = itemCreateRequest
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+        idempotencyKey?.apply { localVariableHeaders["Idempotency-Key"] = this.toString() }
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.POST,
+            "/api/public/v1/items",
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = true,
+        )
+
+        return jsonRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
 
     /**
      * Delete an item from the seller&#39;s stock
@@ -293,6 +330,40 @@ open class ItemsApi : ApiClient {
         val localVariableConfig = RequestConfig<kotlin.Any?>(
             RequestMethod.POST,
             "/api/public/v1/items/{id}/republish".replace("{" + "id" + "}", "$id"),
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = true,
+        )
+
+        return jsonRequest(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+
+    /**
+     * Change an item of the seller&#39;s stock
+     * Changes one item of the seller&#39;s stock with a JSON merge patch: a field left out keeps its value, a field set to &#x60;null&#x60; is cleared (not &#x60;name&#x60;, &#x60;sold&#x60;, &#x60;photoIds&#x60;, &#x60;colorIds&#x60; nor &#x60;labels&#x60;: send &#x60;[]&#x60; to empty a list), a list replaces the whole list. It changes the item in ControlResell only, not its listings on the marketplaces. The amounts are &#x60;{amount, currency}&#x60; in the item&#39;s currency (EUR for a new item; another currency is refused with &#x60;422 currency_mismatch&#x60;). &#x60;photoIds&#x60; are files already in the seller&#39;s library: another seller&#39;s, or an unknown one, is &#x60;404 photo_not_found&#x60;. A label the seller does not have yet is created. Requires &#x60;items:write&#x60;.
+     * @param id The item&#39;s identifier, a number.
+     * @param itemUpdateRequest 
+     * @return Item
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun updateItem(id: kotlin.Long, itemUpdateRequest: ItemUpdateRequest): HttpResponse<Item> {
+
+        val localVariableAuthNames = listOf<String>("bearerAuth")
+
+        val localVariableBody = itemUpdateRequest
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.PATCH,
+            "/api/public/v1/items/{id}".replace("{" + "id" + "}", "$id"),
             query = localVariableQuery,
             headers = localVariableHeaders,
             requiresAuthentication = true,
