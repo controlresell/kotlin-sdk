@@ -2,6 +2,7 @@ package com.controlresell.sdk
 
 import com.controlresell.sdk.generated.apis.AccountsApi
 import com.controlresell.sdk.generated.apis.ConversationsApi
+import com.controlresell.sdk.generated.apis.CustomersApi
 import com.controlresell.sdk.generated.apis.ItemsApi
 import com.controlresell.sdk.generated.apis.MeApi
 import com.controlresell.sdk.generated.apis.OrdersApi
@@ -60,6 +61,9 @@ class ControlResell(
 
     /** The seller's sales and purchases. */
     val orders: OrdersApi = OrdersApi(baseUrl, httpClient).authenticated()
+
+    /** The other parties of the seller's sales and purchases (needs the `customers:read` scope). */
+    val customers: CustomersApi = CustomersApi(baseUrl, httpClient).authenticated()
 
     private fun <T : ApiClient> T.authenticated(): T = apply { setBearerToken(key) }
 

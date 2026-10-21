@@ -309,6 +309,26 @@ class ControlResellTest {
         assertTrue(query.contains("from=2026-10-01") && query.contains("to=2026-10-02"), query)
     }
 
+    @Test
+    fun listAllCustomers_readsEveryPage_withTheSameFilters() = runTest {
+        val seen = mutableListOf<Triple<String, String?, String?>>()
+        val customers = client { request ->
+            val p = request.url.parameters
+            seen += Triple(request.url.encodedPath, p["cursor"], p["accountId"])
+            val (name, next) = if (p["cursor"] == null) "Ann" to "\"c2\"" else "Bob" to "null"
+            respond("""{"data":[${customer(name)}],"nextCursor":$next}""", HttpStatusCode.OK, jsonHeaders)
+        }.listAllCustomers(accountId = ACCOUNT, from = Instant.parse("2026-10-01T00:00:00Z")).toList()
+
+        assertEquals(listOf("Ann", "Bob"), customers.map { it.firstName })
+        assertEquals(
+            listOf<Triple<String, String?, String?>>(Triple("/api/public/v1/customers", null, ACCOUNT), Triple("/api/public/v1/customers", "c2", ACCOUNT)),
+            seen,
+        )
+    }
+
+    private fun customer(firstName: String) = """{"id":"$ACCOUNT","firstName":"$firstName","lastName":"Doe","email":null,
+        "address":{"country":"FR"},"createdAt":"2026-10-21T10:00:00Z"}"""
+
     private fun order(platformOrderId: String) = """{"id":"$ACCOUNT","accountId":"$ACCOUNT","type":"SALE","status":"PAID",
         "platformOrderId":"$platformOrderId","price":{"amount":"12.50","currency":"EUR"},"prepared":false,
         "date":"2026-10-21T10:00:00Z","items":[]}"""
