@@ -91,6 +91,42 @@ open class OrdersApi : ApiClient {
 
 
     /**
+     * List the shipping labels still to ship
+     * The shipping labels of the seller&#39;s orders waiting to be shipped (label ordered or sent to the seller, order not marked prepared), oldest order first, one page at a time. Each label names its order. The links are signed and expire: read them again rather than storing them. Requires &#x60;orders:read&#x60;.
+     * @param limit Page size, 1 to 100 (50 by default). (optional, default to 50)
+     * @param cursor The &#x60;nextCursor&#x60; of the previous page. (optional)
+     * @return OrderLabelPage
+     */
+    @Suppress("UNCHECKED_CAST")
+    open suspend fun listLabelsToShip(limit: kotlin.Int? = 50, cursor: kotlin.String? = null): HttpResponse<OrderLabelPage> {
+
+        val localVariableAuthNames = listOf<String>("bearerAuth")
+
+        val localVariableBody = 
+            io.ktor.client.utils.EmptyContent
+
+        val localVariableQuery = mutableMapOf<String, List<String>>()
+        limit?.apply { localVariableQuery["limit"] = listOf("$limit") }
+        cursor?.apply { localVariableQuery["cursor"] = listOf("$cursor") }
+        val localVariableHeaders = mutableMapOf<String, String>()
+
+        val localVariableConfig = RequestConfig<kotlin.Any?>(
+            RequestMethod.GET,
+            "/api/public/v1/orders/labels",
+            query = localVariableQuery,
+            headers = localVariableHeaders,
+            requiresAuthentication = true,
+        )
+
+        return request(
+            localVariableConfig,
+            localVariableBody,
+            localVariableAuthNames
+        ).wrap()
+    }
+
+
+    /**
      * The shipping labels of an order
      * The order&#39;s shipping labels, in one page (&#x60;nextCursor&#x60; is &#x60;null&#x60;). The links are signed and expire: read them again rather than storing them. Requires &#x60;orders:read&#x60;.
      * @param id The order&#39;s identifier, a UUID.

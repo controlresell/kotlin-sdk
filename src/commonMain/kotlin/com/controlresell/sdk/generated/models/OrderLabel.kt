@@ -32,6 +32,7 @@ import kotlinx.serialization.encoding.*
  * 
  *
  * @param id 
+ * @param orderId 
  * @param carrier 
  * @param url 
  * @param originalUrl 
@@ -42,6 +43,8 @@ import kotlinx.serialization.encoding.*
 data class OrderLabel (
 
     @SerialName(value = "id") @Required val id: kotlin.String,
+
+    @SerialName(value = "orderId") @Required val orderId: kotlin.String,
 
     @SerialName(value = "carrier") val carrier: kotlin.String? = null,
 

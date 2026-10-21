@@ -285,6 +285,30 @@ class ControlResellTest {
         assertTrue(seen.all { it["bucket"] == "to_send" && it["platform"] == "VINTED" && it["from"]?.startsWith("2026-10-01") == true }, seen.toString())
     }
 
+    @Test
+    fun listAllLabelsToShip_readsEveryPage_onOrdersLabels() = runTest {
+        val seen = mutableListOf<Pair<String, String?>>()
+        val labels = client { request ->
+            seen += request.url.encodedPath to request.url.parameters["cursor"]
+            val (id, next) = if (request.url.parameters["cursor"] == null) "a" to "\"c2\"" else "b" to "null"
+            respond("""{"data":[{"id":"$ACCOUNT","orderId":"$ACCOUNT","carrier":"$id"}],"nextCursor":$next}""", HttpStatusCode.OK, jsonHeaders)
+        }.listAllLabelsToShip().toList()
+
+        assertEquals(listOf("a", "b"), labels.map { it.carrier })
+        assertEquals(listOf("/api/public/v1/orders/labels" to null, "/api/public/v1/orders/labels" to "c2"), seen)
+    }
+
+    @Test
+    fun listAllConversationMessages_sendsTheFromAndToWindow() = runTest {
+        var query = ""
+        client { request ->
+            query = request.url.parameters.entries().joinToString("&") { "${it.key}=${it.value.first()}" }
+            respond("""{"data":[],"nextCursor":null}""", HttpStatusCode.OK, jsonHeaders)
+        }.listAllConversationMessages(ACCOUNT, from = Instant.parse("2026-10-01T00:00:00Z"), to = Instant.parse("2026-10-02T00:00:00Z")).toList()
+
+        assertTrue(query.contains("from=2026-10-01") && query.contains("to=2026-10-02"), query)
+    }
+
     private fun order(platformOrderId: String) = """{"id":"$ACCOUNT","accountId":"$ACCOUNT","type":"SALE","status":"PAID",
         "platformOrderId":"$platformOrderId","price":{"amount":"12.50","currency":"EUR"},"prepared":false,
         "date":"2026-10-21T10:00:00Z","items":[]}"""
