@@ -2,6 +2,7 @@ package com.controlresell.sdk
 
 import com.controlresell.sdk.generated.models.Account
 import com.controlresell.sdk.generated.models.Conversation
+import com.controlresell.sdk.generated.models.Customer
 import com.controlresell.sdk.generated.models.Item
 import com.controlresell.sdk.generated.models.Message
 import com.controlresell.sdk.generated.models.Order
@@ -87,4 +88,19 @@ fun ControlResell.listAllOrders(
     orders.listOrders(
         limit = pageSize, cursor = cursor, bucket = bucket, platform = platform, accountId = accountId, from = from, to = to,
     ).body().let { Page(it.`data`, it.nextCursor) }
+}
+
+/**
+ * Every customer of the seller, the most recently created first, filtered as
+ * [CustomersApi.listCustomers][com.controlresell.sdk.generated.apis.CustomersApi.listCustomers] ([from] is inclusive and
+ * [to] exclusive, on the creation date).
+ */
+fun ControlResell.listAllCustomers(
+    accountId: String? = null,
+    from: Instant? = null,
+    to: Instant? = null,
+    pageSize: Int? = null,
+): Flow<Customer> = paginate { cursor ->
+    customers.listCustomers(limit = pageSize, cursor = cursor, from = from, to = to, accountId = accountId).body()
+        .let { Page(it.`data`, it.nextCursor) }
 }
