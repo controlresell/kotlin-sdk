@@ -95,14 +95,16 @@ open class ConversationsApi : ApiClient {
 
     /**
      * List the messages of a conversation
-     * The messages of one conversation, oldest first, one page at a time: at most its 1 000 most recent messages. Requires &#x60;conversations:read&#x60;.
+     * The messages of one conversation, oldest first, one page at a time: at most its 1 000 most recent messages (of the period, with &#x60;from&#x60; or &#x60;to&#x60;). Pass the &#x60;nextCursor&#x60; of a page as &#x60;cursor&#x60; with the same &#x60;from&#x60; and &#x60;to&#x60; (a cursor reused with others is an &#x60;invalid_cursor&#x60;). &#x60;from&#x60; and &#x60;to&#x60; go straight to a period: &#x60;from&#x60; is inclusive, &#x60;to&#x60; exclusive. Requires &#x60;conversations:read&#x60;.
      * @param id The conversation&#39;s identifier, a UUID.
      * @param limit Page size, 1 to 100 (50 by default). (optional, default to 50)
      * @param cursor The &#x60;nextCursor&#x60; of the previous page. (optional)
+     * @param from Only the messages created at or after this instant (inclusive), ISO-8601 with its offset, such as &#x60;2026-10-01T00:00:00Z&#x60;. (optional)
+     * @param to Only the messages created before this instant (exclusive), ISO-8601 with its offset; after &#x60;from&#x60;. (optional)
      * @return MessagePage
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun listConversationMessages(id: kotlin.String, limit: kotlin.Int? = 50, cursor: kotlin.String? = null): HttpResponse<MessagePage> {
+    open suspend fun listConversationMessages(id: kotlin.String, limit: kotlin.Int? = 50, cursor: kotlin.String? = null, from: kotlin.time.Instant? = null, to: kotlin.time.Instant? = null): HttpResponse<MessagePage> {
 
         val localVariableAuthNames = listOf<String>("bearerAuth")
 
@@ -112,6 +114,8 @@ open class ConversationsApi : ApiClient {
         val localVariableQuery = mutableMapOf<String, List<String>>()
         limit?.apply { localVariableQuery["limit"] = listOf("$limit") }
         cursor?.apply { localVariableQuery["cursor"] = listOf("$cursor") }
+        from?.apply { localVariableQuery["from"] = listOf("$from") }
+        to?.apply { localVariableQuery["to"] = listOf("$to") }
         val localVariableHeaders = mutableMapOf<String, String>()
 
         val localVariableConfig = RequestConfig<kotlin.Any?>(
@@ -132,15 +136,17 @@ open class ConversationsApi : ApiClient {
 
     /**
      * List the seller&#39;s conversations
-     * The conversations with buyers on the seller&#39;s marketplace accounts, latest activity first, one page at a time. A conversation that receives a message while you read moves to the head: read again from the first page to see it. Requires &#x60;conversations:read&#x60;.
+     * The conversations with buyers on the seller&#39;s marketplace accounts, latest activity first, one page at a time. A conversation that receives a message while you read moves to the head: read again from the first page to see it. Pass the &#x60;nextCursor&#x60; of a page as &#x60;cursor&#x60; with the same filters (a cursor reused with other filters is an &#x60;invalid_cursor&#x60;). &#x60;from&#x60; and &#x60;to&#x60; go straight to a period of the last message: &#x60;from&#x60; is inclusive, &#x60;to&#x60; exclusive, and the period is read page by page like the whole list. Requires &#x60;conversations:read&#x60;.
      * @param limit Page size, 1 to 100 (50 by default). (optional, default to 50)
      * @param cursor The &#x60;nextCursor&#x60; of the previous page. (optional)
      * @param unread &#x60;true&#x60;: only conversations with an unread buyer message; &#x60;false&#x60;: the others. (optional)
      * @param accountId Only the conversations of this marketplace account (&#x60;GET /accounts&#x60;). (optional)
+     * @param from Only the conversations whose last message is at or after this instant (inclusive), ISO-8601 with its offset, such as &#x60;2026-10-01T00:00:00Z&#x60;. (optional)
+     * @param to Only the conversations whose last message is before this instant (exclusive), ISO-8601 with its offset; after &#x60;from&#x60;. (optional)
      * @return ConversationPage
      */
     @Suppress("UNCHECKED_CAST")
-    open suspend fun listConversations(limit: kotlin.Int? = 50, cursor: kotlin.String? = null, unread: kotlin.Boolean? = null, accountId: kotlin.String? = null): HttpResponse<ConversationPage> {
+    open suspend fun listConversations(limit: kotlin.Int? = 50, cursor: kotlin.String? = null, unread: kotlin.Boolean? = null, accountId: kotlin.String? = null, from: kotlin.time.Instant? = null, to: kotlin.time.Instant? = null): HttpResponse<ConversationPage> {
 
         val localVariableAuthNames = listOf<String>("bearerAuth")
 
@@ -152,6 +158,8 @@ open class ConversationsApi : ApiClient {
         cursor?.apply { localVariableQuery["cursor"] = listOf("$cursor") }
         unread?.apply { localVariableQuery["unread"] = listOf("$unread") }
         accountId?.apply { localVariableQuery["accountId"] = listOf("$accountId") }
+        from?.apply { localVariableQuery["from"] = listOf("$from") }
+        to?.apply { localVariableQuery["to"] = listOf("$to") }
         val localVariableHeaders = mutableMapOf<String, String>()
 
         val localVariableConfig = RequestConfig<kotlin.Any?>(

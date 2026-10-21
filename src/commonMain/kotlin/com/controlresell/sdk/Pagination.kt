@@ -5,6 +5,7 @@ import com.controlresell.sdk.generated.models.Conversation
 import com.controlresell.sdk.generated.models.Item
 import com.controlresell.sdk.generated.models.Message
 import com.controlresell.sdk.generated.models.Order
+import com.controlresell.sdk.generated.models.OrderLabel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlin.time.Instant
@@ -39,17 +40,35 @@ fun ControlResell.listAllItems(sold: Boolean? = null, accountId: String? = null,
             .let { Page(it.`data`, it.nextCursor) }
     }
 
-/** Every conversation of the seller, filtered as [ConversationsApi.listConversations][com.controlresell.sdk.generated.apis.ConversationsApi.listConversations]. */
-fun ControlResell.listAllConversations(unread: Boolean? = null, accountId: String? = null, pageSize: Int? = null): Flow<Conversation> =
-    paginate { cursor ->
-        conversations.listConversations(limit = pageSize, cursor = cursor, unread = unread, accountId = accountId).body()
-            .let { Page(it.`data`, it.nextCursor) }
-    }
+/**
+ * Every conversation of the seller, filtered as [ConversationsApi.listConversations][com.controlresell.sdk.generated.apis.ConversationsApi.listConversations]
+ * ([from] is inclusive and [to] exclusive, on the last message).
+ */
+fun ControlResell.listAllConversations(
+    unread: Boolean? = null,
+    accountId: String? = null,
+    from: Instant? = null,
+    to: Instant? = null,
+    pageSize: Int? = null,
+): Flow<Conversation> = paginate { cursor ->
+    conversations.listConversations(limit = pageSize, cursor = cursor, unread = unread, accountId = accountId, from = from, to = to)
+        .body().let { Page(it.`data`, it.nextCursor) }
+}
 
-/** Every message of the conversation [id]. */
-fun ControlResell.listAllConversationMessages(id: String, pageSize: Int? = null): Flow<Message> = paginate { cursor ->
-    conversations.listConversationMessages(id = id, limit = pageSize, cursor = cursor).body()
+/** Every message of the conversation [id], over the period [from] (inclusive) to [to] (exclusive) when given. */
+fun ControlResell.listAllConversationMessages(
+    id: String,
+    from: Instant? = null,
+    to: Instant? = null,
+    pageSize: Int? = null,
+): Flow<Message> = paginate { cursor ->
+    conversations.listConversationMessages(id = id, limit = pageSize, cursor = cursor, from = from, to = to).body()
         .let { Page(it.`data`, it.nextCursor) }
+}
+
+/** Every shipping label still to ship over all the orders, the oldest order first (each names its `orderId`). */
+fun ControlResell.listAllLabelsToShip(pageSize: Int? = null): Flow<OrderLabel> = paginate { cursor ->
+    orders.listLabelsToShip(limit = pageSize, cursor = cursor).body().let { Page(it.`data`, it.nextCursor) }
 }
 
 /**
