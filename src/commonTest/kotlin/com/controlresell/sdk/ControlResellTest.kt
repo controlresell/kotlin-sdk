@@ -204,7 +204,7 @@ class ControlResellTest {
         val sdk = client { request ->
             paths += request.url.encodedPath
             keys += request.headers[IDEMPOTENCY_KEY_HEADER]
-            bodies += (request.body as io.ktor.http.content.TextContent).text
+            bodies += (request.body as io.ktor.http.content.TextContent).text.filterNot { it.isWhitespace() }
             respond(ACTION, HttpStatusCode.Accepted, jsonHeaders)
         }
         sdk.items.dropItemPrice(7, "k1", PriceDropRequest(type = "PERCENT", value = "10"))
