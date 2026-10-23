@@ -326,6 +326,37 @@ class ControlResellTest {
         )
     }
 
+    @Test
+    fun listAllCatalogBrands_readsEveryPage_withTheSameQuery() = runTest {
+        val seen = mutableListOf<Triple<String, String?, String?>>()
+        val brands = client { request ->
+            val p = request.url.parameters
+            seen += Triple(request.url.encodedPath, p["cursor"], p["q"])
+            val (id, name, next) = if (p["cursor"] == null) Triple(1, "Nike", "\"c2\"") else Triple(2, "Nikon", "null")
+            respond("""{"data":[{"id":$id,"name":"$name","custom":false}],"nextCursor":$next}""", HttpStatusCode.OK, jsonHeaders)
+        }.listAllCatalogBrands(q = "nik").toList()
+
+        assertEquals(listOf("Nike", "Nikon"), brands.map { it.name })
+        assertEquals(
+            listOf<Triple<String, String?, String?>>(
+                Triple("/api/public/v1/catalogs/brands", null, "nik"), Triple("/api/public/v1/catalogs/brands", "c2", "nik"),
+            ),
+            seen,
+        )
+    }
+
+    @Test
+    fun catalogColors_sendTheCategory_andReadTheValues() = runTest {
+        var query = ""
+        val page = client { request ->
+            query = request.url.encodedPath + "?" + request.url.parameters.entries().joinToString("&") { (k, v) -> "$k=${v.first()}" }
+            respond("""{"data":[{"id":3,"key":"red","title":"Red"}],"nextCursor":null}""", HttpStatusCode.OK, jsonHeaders)
+        }.catalogs.listCatalogColors(categoryId = 12).body()
+
+        assertEquals("Red", page.`data`.single().title)
+        assertTrue(query.startsWith("/api/public/v1/catalogs/colors?") && query.contains("categoryId=12"), query)
+    }
+
     private fun customer(firstName: String) = """{"id":"$ACCOUNT","firstName":"$firstName","lastName":"Doe","email":null,
         "address":{"country":"FR"},"createdAt":"2026-10-21T10:00:00Z"}"""
 

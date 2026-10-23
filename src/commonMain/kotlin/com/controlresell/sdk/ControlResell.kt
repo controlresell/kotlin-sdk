@@ -1,6 +1,7 @@
 package com.controlresell.sdk
 
 import com.controlresell.sdk.generated.apis.AccountsApi
+import com.controlresell.sdk.generated.apis.CatalogsApi
 import com.controlresell.sdk.generated.apis.ConversationsApi
 import com.controlresell.sdk.generated.apis.CustomersApi
 import com.controlresell.sdk.generated.apis.ItemsApi
@@ -64,6 +65,9 @@ class ControlResell(
 
     /** The other parties of the seller's sales and purchases (needs the `customers:read` scope). */
     val customers: CustomersApi = CustomersApi(baseUrl, httpClient).authenticated()
+
+    /** The catalog an item is written with: categories, brands, sizes, colors... (needs the `items:read` scope). */
+    val catalogs: CatalogsApi = CatalogsApi(baseUrl, httpClient).authenticated()
 
     private fun <T : ApiClient> T.authenticated(): T = apply { setBearerToken(key) }
 
