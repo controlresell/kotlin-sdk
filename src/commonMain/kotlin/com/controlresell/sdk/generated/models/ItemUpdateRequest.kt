@@ -23,6 +23,9 @@
 
 package com.controlresell.sdk.generated.models
 
+import com.controlresell.sdk.generated.models.ItemAttribute
+import com.controlresell.sdk.generated.models.ItemCustomField
+import com.controlresell.sdk.generated.models.ItemEnumValue
 import com.controlresell.sdk.generated.models.Money
 
 import kotlinx.serialization.*
@@ -44,11 +47,20 @@ import kotlinx.serialization.encoding.*
  * @param sex 
  * @param labels 
  * @param sold 
+ * @param packageSizeId 
+ * @param materialIds 
+ * @param measurementLength 
+ * @param measurementWidth 
+ * @param enumValues 
+ * @param attributes 
+ * @param customFields 
  * @param estimatedPrice 
  * @param purchasePrice 
  * @param purchaseDate 
+ * @param purchasePlaceId 
  * @param sellingPrice 
  * @param sellingDate 
+ * @param sellingPlaceId 
  */
 @Serializable
 
@@ -78,15 +90,33 @@ data class ItemUpdateRequest (
 
     @SerialName(value = "sold") val sold: kotlin.Boolean? = null,
 
+    @SerialName(value = "packageSizeId") val packageSizeId: kotlin.Long? = null,
+
+    @SerialName(value = "materialIds") val materialIds: kotlin.collections.List<kotlin.Long>? = null,
+
+    @SerialName(value = "measurementLength") val measurementLength: kotlin.Double? = null,
+
+    @SerialName(value = "measurementWidth") val measurementWidth: kotlin.Double? = null,
+
+    @SerialName(value = "enumValues") val enumValues: kotlin.collections.List<ItemEnumValue>? = null,
+
+    @SerialName(value = "attributes") val attributes: kotlin.collections.List<ItemAttribute>? = null,
+
+    @SerialName(value = "customFields") val customFields: kotlin.collections.List<ItemCustomField>? = null,
+
     @SerialName(value = "estimatedPrice") val estimatedPrice: Money? = null,
 
     @SerialName(value = "purchasePrice") val purchasePrice: Money? = null,
 
     @SerialName(value = "purchaseDate") val purchaseDate: kotlin.time.Instant? = null,
 
+    @SerialName(value = "purchasePlaceId") val purchasePlaceId: kotlin.Long? = null,
+
     @SerialName(value = "sellingPrice") val sellingPrice: Money? = null,
 
-    @SerialName(value = "sellingDate") val sellingDate: kotlin.time.Instant? = null
+    @SerialName(value = "sellingDate") val sellingDate: kotlin.time.Instant? = null,
+
+    @SerialName(value = "sellingPlaceId") val sellingPlaceId: kotlin.Long? = null
 
 ) {
 
