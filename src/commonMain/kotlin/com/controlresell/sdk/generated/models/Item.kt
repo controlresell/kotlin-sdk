@@ -23,6 +23,9 @@
 
 package com.controlresell.sdk.generated.models
 
+import com.controlresell.sdk.generated.models.ItemAttribute
+import com.controlresell.sdk.generated.models.ItemCustomField
+import com.controlresell.sdk.generated.models.ItemEnumValue
 import com.controlresell.sdk.generated.models.ItemPhoto
 import com.controlresell.sdk.generated.models.Money
 
@@ -39,6 +42,10 @@ import kotlinx.serialization.encoding.*
  * @param colorIds 
  * @param labels 
  * @param sold 
+ * @param materialIds 
+ * @param enumValues 
+ * @param attributes 
+ * @param customFields 
  * @param createdAt 
  * @param updatedAt 
  * @param sku 
@@ -48,11 +55,16 @@ import kotlinx.serialization.encoding.*
  * @param sizeId 
  * @param state 
  * @param sex 
+ * @param packageSizeId 
+ * @param measurementLength 
+ * @param measurementWidth 
  * @param estimatedPrice 
  * @param purchasePrice 
  * @param purchaseDate 
+ * @param purchasePlaceId 
  * @param sellingPrice 
  * @param sellingDate 
+ * @param sellingPlaceId 
  */
 @Serializable
 
@@ -69,6 +81,14 @@ data class Item (
     @SerialName(value = "labels") @Required val labels: kotlin.collections.List<kotlin.String>,
 
     @SerialName(value = "sold") @Required val sold: kotlin.Boolean,
+
+    @SerialName(value = "materialIds") @Required val materialIds: kotlin.collections.List<kotlin.Long>,
+
+    @SerialName(value = "enumValues") @Required val enumValues: kotlin.collections.List<ItemEnumValue>,
+
+    @SerialName(value = "attributes") @Required val attributes: kotlin.collections.List<ItemAttribute>,
+
+    @SerialName(value = "customFields") @Required val customFields: kotlin.collections.List<ItemCustomField>,
 
     @SerialName(value = "createdAt") @Required val createdAt: kotlin.time.Instant,
 
@@ -88,15 +108,25 @@ data class Item (
 
     @SerialName(value = "sex") val sex: kotlin.String? = null,
 
+    @SerialName(value = "packageSizeId") val packageSizeId: kotlin.Long? = null,
+
+    @SerialName(value = "measurementLength") val measurementLength: kotlin.Double? = null,
+
+    @SerialName(value = "measurementWidth") val measurementWidth: kotlin.Double? = null,
+
     @SerialName(value = "estimatedPrice") val estimatedPrice: Money? = null,
 
     @SerialName(value = "purchasePrice") val purchasePrice: Money? = null,
 
     @SerialName(value = "purchaseDate") val purchaseDate: kotlin.time.Instant? = null,
 
+    @SerialName(value = "purchasePlaceId") val purchasePlaceId: kotlin.Long? = null,
+
     @SerialName(value = "sellingPrice") val sellingPrice: Money? = null,
 
-    @SerialName(value = "sellingDate") val sellingDate: kotlin.time.Instant? = null
+    @SerialName(value = "sellingDate") val sellingDate: kotlin.time.Instant? = null,
+
+    @SerialName(value = "sellingPlaceId") val sellingPlaceId: kotlin.Long? = null
 
 ) {
 

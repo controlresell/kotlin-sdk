@@ -334,7 +334,7 @@ class ControlResellTest {
         "date":"2026-10-21T10:00:00Z","items":[]}"""
 
     private fun item(id: Long, sex: String = "WOMEN") = """{"id":$id,"name":"n","sku":null,"description":null,"photos":[],
-        "categoryId":null,"brandId":null,"sizeId":null,"colorIds":[],"state":null,"sex":"$sex","labels":[],"sold":false,
+        "categoryId":null,"brandId":null,"sizeId":null,"colorIds":[],"state":null,"sex":"$sex","labels":[],"sold":false,"materialIds":[],"enumValues":[],"attributes":[],"customFields":[],
         "estimatedPrice":{"amount":"12.50","currency":"EUR"},"purchasePrice":null,"purchaseDate":null,"sellingPrice":null,
         "sellingDate":null,"createdAt":"2026-10-20T10:00:00Z","updatedAt":"2026-10-20T10:00:00Z","unknownField":1}"""
 
