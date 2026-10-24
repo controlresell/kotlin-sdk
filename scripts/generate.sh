@@ -3,6 +3,8 @@
 #
 #   scripts/generate.sh [spec]   # a file or a URL; default: https://api.controlresell.com/api/public/openapi.json
 #
+# A free-form JSON value (the data of an event) is a kotlinx JsonElement, which the serializer reads as it is.
+#
 # Writes src/commonMain/kotlin/com/controlresell/sdk/generated and .spec-sha256. The document itself is not committed.
 set -euo pipefail
 
@@ -30,6 +32,8 @@ java -jar "$JAR" generate \
   --library multiplatform \
   -o "$WORK/out" \
   --additional-properties=packageName=com.controlresell.sdk.generated,omitGradleWrapper=true,dateLibrary=kotlinx-datetime \
+  --type-mappings=AnyType=JsonElement \
+  --import-mappings=JsonElement=kotlinx.serialization.json.JsonElement \
   > "$WORK/generate.log"
 
 TARGET="$ROOT/src/commonMain/kotlin/com/controlresell/sdk/generated"

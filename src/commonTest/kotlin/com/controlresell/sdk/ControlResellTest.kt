@@ -20,6 +20,9 @@ import com.controlresell.sdk.generated.models.PublishRequest
 import com.controlresell.sdk.generated.models.RepublishRequest
 import com.controlresell.sdk.generated.models.SendMessageRequest
 import com.controlresell.sdk.generated.models.SendOfferRequest
+import com.controlresell.sdk.generated.models.WebhookEndpointCreateRequest
+import kotlinx.serialization.json.int
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -310,6 +313,47 @@ class ControlResellTest {
     }
 
     @Test
+    fun listAllConversations_sendsTheBuyerItemAndOfferStatusFilters() = runTest {
+        var query = ""
+        client { request ->
+            query = request.url.parameters.entries().joinToString("&") { "${it.key}=${it.value.first()}" }
+            respond("""{"data":[],"nextCursor":null}""", HttpStatusCode.OK, jsonHeaders)
+        }.listAllConversations(buyerId = "b-1", itemId = 42, offerStatus = "PENDING").toList()
+
+        assertTrue(query.contains("buyerId=b-1") && query.contains("itemId=42") && query.contains("offerStatus=PENDING"), query)
+    }
+
+    @Test
+    fun listAllFavorites_readsEveryPage_withTheSameFilters() = runTest {
+        val seen = mutableListOf<Triple<String, String?, String?>>()
+        val favorites = client { request ->
+            val p = request.url.parameters
+            seen += Triple(request.url.encodedPath, p["cursor"], p["itemId"])
+            val (buyer, next) = if (p["cursor"] == null) "b1" to "\"c2\"" else "b2" to "null"
+            respond("""{"data":[${favorite(buyer)}],"nextCursor":$next}""", HttpStatusCode.OK, jsonHeaders)
+        }.listAllFavorites(itemId = 42, from = Instant.parse("2026-10-01T00:00:00Z")).toList()
+
+        assertEquals(listOf("b1", "b2"), favorites.map { it.buyerId })
+        assertEquals("Jacket", favorites.first().item?.name)
+        assertEquals(
+            listOf<Triple<String, String?, String?>>(Triple("/api/public/v1/favorites", null, "42"), Triple("/api/public/v1/favorites", "c2", "42")),
+            seen,
+        )
+    }
+
+    @Test
+    fun listAllItemFavorites_readsTheFavoritesOfOneItem_andAnUnfollowedListingHasNoItem() = runTest {
+        var path = ""
+        val favorites = client { request ->
+            path = request.url.encodedPath
+            respond("""{"data":[${favorite("b1", item = "null")}],"nextCursor":null}""", HttpStatusCode.OK, jsonHeaders)
+        }.listAllItemFavorites(42).toList()
+
+        assertEquals("/api/public/v1/items/42/favorites", path)
+        assertEquals(null, favorites.single().item)
+    }
+
+    @Test
     fun listAllCustomers_readsEveryPage_withTheSameFilters() = runTest {
         val seen = mutableListOf<Triple<String, String?, String?>>()
         val customers = client { request ->
@@ -325,6 +369,114 @@ class ControlResellTest {
             seen,
         )
     }
+
+    @Test
+    fun listAllCatalogBrands_readsEveryPage_withTheSameQuery() = runTest {
+        val seen = mutableListOf<Triple<String, String?, String?>>()
+        val brands = client { request ->
+            val p = request.url.parameters
+            seen += Triple(request.url.encodedPath, p["cursor"], p["q"])
+            val (id, name, next) = if (p["cursor"] == null) Triple(1, "Nike", "\"c2\"") else Triple(2, "Nikon", "null")
+            respond("""{"data":[{"id":$id,"name":"$name","custom":false}],"nextCursor":$next}""", HttpStatusCode.OK, jsonHeaders)
+        }.listAllCatalogBrands(q = "nik").toList()
+
+        assertEquals(listOf("Nike", "Nikon"), brands.map { it.name })
+        assertEquals(
+            listOf<Triple<String, String?, String?>>(
+                Triple("/api/public/v1/catalogs/brands", null, "nik"), Triple("/api/public/v1/catalogs/brands", "c2", "nik"),
+            ),
+            seen,
+        )
+    }
+
+    @Test
+    fun catalogColors_sendTheCategory_andReadTheValues() = runTest {
+        var query = ""
+        val page = client { request ->
+            query = request.url.encodedPath + "?" + request.url.parameters.entries().joinToString("&") { (k, v) -> "$k=${v.first()}" }
+            respond("""{"data":[{"id":3,"key":"red","title":"Red"}],"nextCursor":null}""", HttpStatusCode.OK, jsonHeaders)
+        }.catalogs.listCatalogColors(categoryId = 12).body()
+
+        assertEquals("Red", page.`data`.single().title)
+        assertTrue(query.startsWith("/api/public/v1/catalogs/colors?") && query.contains("categoryId=12"), query)
+    }
+
+    @Test
+    fun createWebhookEndpoint_postsWithTheCallersKey_andReturnsTheSecret() = runTest {
+        val requests = mutableListOf<HttpRequestData>()
+        val created = client { request ->
+            requests += request
+            respond("""{"endpoint":$ENDPOINT,"secret":"whsec_abc"}""", HttpStatusCode.Created, jsonHeaders)
+        }.webhooks.createWebhookEndpoint("k1", WebhookEndpointCreateRequest(url = "https://example.com/hook", eventTypes = listOf("item.sold"))).body()
+
+        assertEquals("whsec_abc", created.secret)
+        assertEquals("enabled", created.endpoint.status)
+        assertEquals(HttpMethod.Post, requests.single().method)
+        assertEquals("/api/public/v1/webhook-endpoints", requests.single().url.encodedPath)
+        assertEquals("k1", requests.single().headers[IDEMPOTENCY_KEY_HEADER])
+    }
+
+    @Test
+    fun listAllWebhookEvents_readsEveryPage_withTheSameTypes_andAnyData() = runTest {
+        val seen = mutableListOf<Pair<String?, String?>>()
+        val events = client { request ->
+            val p = request.url.parameters
+            seen += p["cursor"] to p["type"]
+            respond(
+                if (p["cursor"] == null) {
+                    """{"data":[{"id":"e1","type":"item.sold","createdAt":"2026-10-24T00:00:00Z","apiVersion":"v1","sellerId":7,"data":{"itemId":42,"source":"order","object":null}}],"nextCursor":"c2"}"""
+                } else {
+                    """{"data":[{"id":"e2","type":"order.created","createdAt":"2026-10-24T00:01:00Z","apiVersion":"v1","sellerId":7,"data":{"orderId":"o1","items":[1,2]}}],"nextCursor":null}"""
+                },
+                HttpStatusCode.OK,
+                jsonHeaders,
+            )
+        }.listAllWebhookEvents(types = listOf("item.sold", "order.created")).toList()
+
+        assertEquals(listOf("item.sold", "order.created"), events.map { it.type })
+        assertEquals(42, events[0].`data`.getValue("itemId").jsonPrimitive.int)
+        assertEquals(listOf<Pair<String?, String?>>(null to "item.sold,order.created", "c2" to "item.sold,order.created"), seen)
+    }
+
+    @Test
+    fun webhookDeliveries_sendTheirFilters_retryPostsToTheDelivery_andDeleteResolvesOn204() = runTest {
+        val requests = mutableListOf<HttpRequestData>()
+        val sdk = client { request ->
+            requests += request
+            when (request.method) {
+                HttpMethod.Delete -> respond("", HttpStatusCode.NoContent)
+                HttpMethod.Get -> respond("""{"data":[$DELIVERY],"nextCursor":null}""", HttpStatusCode.OK, jsonHeaders)
+                else -> respond(DELIVERY, HttpStatusCode.Accepted, jsonHeaders)
+            }
+        }
+        assertEquals(3L, sdk.listAllWebhookDeliveries("e-1", status = "failed").toList().single().attempt)
+        sdk.webhooks.retryWebhookDelivery("e-1", "d1", "k2")
+        sdk.webhooks.deleteWebhookEndpoint("e-1")
+
+        assertEquals("failed", requests[0].url.parameters["status"])
+        assertEquals("/api/public/v1/webhook-endpoints/e-1/deliveries/d1/retry", requests[1].url.encodedPath)
+        assertEquals("k2", requests[1].headers[IDEMPOTENCY_KEY_HEADER])
+        assertEquals(HttpMethod.Delete, requests[2].method)
+    }
+
+    @Test
+    fun testWebhookEndpoint_getsAKey_andReadsTheResult() = runTest {
+        val requests = mutableListOf<HttpRequestData>()
+        val result = client { request ->
+            requests += request
+            respond("""{"success":true,"statusCode":200,"durationMs":12,"error":null}""", HttpStatusCode.OK, jsonHeaders)
+        }.webhooks.testWebhookEndpoint("e-1").body()
+
+        assertTrue(result.success)
+        assertEquals("/api/public/v1/webhook-endpoints/e-1/test", requests.single().url.encodedPath)
+        assertTrue(!requests.single().headers[IDEMPOTENCY_KEY_HEADER].isNullOrEmpty())
+    }
+
+    private val ENDPOINT = """{"id":"e-1","url":"https://example.com/hook","description":null,"eventTypes":["item.sold"],"payloadMode":"light","status":"enabled","apiVersion":"v1","createdAt":"2026-10-24T00:00:00Z","updatedAt":"2026-10-24T00:00:00Z"}"""
+    private val DELIVERY = """{"id":"d1","eventId":"e1","eventType":"item.sold","status":"failed","attempt":3,"createdAt":"2026-10-24T00:00:00Z","updatedAt":"2026-10-24T00:00:00Z"}"""
+
+    private fun favorite(buyerId: String, item: String = """{"id":42,"name":"Jacket","price":{"amount":"12.50","currency":"EUR"},"sold":false}""") =
+        """{"id":"$ACCOUNT","accountId":"$ACCOUNT","platform":"VINTED","buyerId":"$buyerId","createdAt":"2026-10-24T00:00:00Z","messageSentAt":null,"listingId":"L1","item":$item}"""
 
     private fun customer(firstName: String) = """{"id":"$ACCOUNT","firstName":"$firstName","lastName":"Doe","email":null,
         "address":{"country":"FR"},"createdAt":"2026-10-21T10:00:00Z"}"""

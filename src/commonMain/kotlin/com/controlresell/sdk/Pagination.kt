@@ -1,12 +1,19 @@
 package com.controlresell.sdk
 
 import com.controlresell.sdk.generated.models.Account
+import com.controlresell.sdk.generated.models.CatalogBrand
+import com.controlresell.sdk.generated.models.CatalogCategory
+import com.controlresell.sdk.generated.models.CatalogSize
+import com.controlresell.sdk.generated.models.CatalogValue
 import com.controlresell.sdk.generated.models.Conversation
 import com.controlresell.sdk.generated.models.Customer
+import com.controlresell.sdk.generated.models.Favorite
 import com.controlresell.sdk.generated.models.Item
 import com.controlresell.sdk.generated.models.Message
 import com.controlresell.sdk.generated.models.Order
 import com.controlresell.sdk.generated.models.OrderLabel
+import com.controlresell.sdk.generated.models.WebhookDelivery
+import com.controlresell.sdk.generated.models.WebhookEvent
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlin.time.Instant
@@ -43,17 +50,23 @@ fun ControlResell.listAllItems(sold: Boolean? = null, accountId: String? = null,
 
 /**
  * Every conversation of the seller, filtered as [ConversationsApi.listConversations][com.controlresell.sdk.generated.apis.ConversationsApi.listConversations]
- * ([from] is inclusive and [to] exclusive, on the last message).
+ * ([from] is inclusive and [to] exclusive, on the last message). [buyerId] keeps the conversations with one buyer, [itemId]
+ * those about one item, [offerStatus] those with an offer at this status (`PENDING`, `ACCEPTED`, `REJECTED`, `CANCELED`).
  */
 fun ControlResell.listAllConversations(
     unread: Boolean? = null,
     accountId: String? = null,
     from: Instant? = null,
     to: Instant? = null,
+    buyerId: String? = null,
+    itemId: Long? = null,
+    offerStatus: String? = null,
     pageSize: Int? = null,
 ): Flow<Conversation> = paginate { cursor ->
-    conversations.listConversations(limit = pageSize, cursor = cursor, unread = unread, accountId = accountId, from = from, to = to)
-        .body().let { Page(it.`data`, it.nextCursor) }
+    conversations.listConversations(
+        limit = pageSize, cursor = cursor, unread = unread, accountId = accountId, from = from, to = to,
+        buyerId = buyerId, itemId = itemId, offerStatus = offerStatus,
+    ).body().let { Page(it.`data`, it.nextCursor) }
 }
 
 /** Every message of the conversation [id], over the period [from] (inclusive) to [to] (exclusive) when given. */
@@ -104,3 +117,103 @@ fun ControlResell.listAllCustomers(
     customers.listCustomers(limit = pageSize, cursor = cursor, from = from, to = to, accountId = accountId).body()
         .let { Page(it.`data`, it.nextCursor) }
 }
+
+/** Every category of the catalog, flat, by identifier; [parentId] keeps the children of one, [platform] one marketplace. */
+fun ControlResell.listAllCatalogCategories(
+    parentId: Long? = null,
+    platform: String? = null,
+    pageSize: Int? = null,
+): Flow<CatalogCategory> = paginate { cursor ->
+    catalogs.listCatalogCategories(limit = pageSize, cursor = cursor, parentId = parentId, platform = platform).body()
+        .let { Page(it.`data`, it.nextCursor) }
+}
+
+/** Every brand of the catalog, by identifier or, with [q], those whose name starts with it. */
+fun ControlResell.listAllCatalogBrands(q: String? = null, pageSize: Int? = null): Flow<CatalogBrand> = paginate { cursor ->
+    catalogs.listCatalogBrands(limit = pageSize, cursor = cursor, q = q).body().let { Page(it.`data`, it.nextCursor) }
+}
+
+/** Every size of the catalog, each with its size group; [categoryId] keeps those of one category. */
+fun ControlResell.listAllCatalogSizes(categoryId: Long? = null, pageSize: Int? = null): Flow<CatalogSize> =
+    paginate { cursor ->
+        catalogs.listCatalogSizes(limit = pageSize, cursor = cursor, categoryId = categoryId).body()
+            .let { Page(it.`data`, it.nextCursor) }
+    }
+
+/** Every one of the colors of the catalog; [categoryId] keeps those of one category. */
+fun ControlResell.listAllCatalogColors(categoryId: Long? = null, pageSize: Int? = null): Flow<CatalogValue> =
+    paginate { cursor ->
+        catalogs.listCatalogColors(limit = pageSize, cursor = cursor, categoryId = categoryId).body()
+            .let { Page(it.`data`, it.nextCursor) }
+    }
+
+/** Every one of the conditions of the catalog; [categoryId] keeps those of one category. */
+fun ControlResell.listAllCatalogConditions(categoryId: Long? = null, pageSize: Int? = null): Flow<CatalogValue> =
+    paginate { cursor ->
+        catalogs.listCatalogConditions(limit = pageSize, cursor = cursor, categoryId = categoryId).body()
+            .let { Page(it.`data`, it.nextCursor) }
+    }
+
+/** Every one of the package sizes of the catalog; [categoryId] keeps those of one category. */
+fun ControlResell.listAllCatalogPackageSizes(categoryId: Long? = null, pageSize: Int? = null): Flow<CatalogValue> =
+    paginate { cursor ->
+        catalogs.listCatalogPackageSizes(limit = pageSize, cursor = cursor, categoryId = categoryId).body()
+            .let { Page(it.`data`, it.nextCursor) }
+    }
+
+/** Every one of the materials of the catalog; [categoryId] keeps those of one category. */
+fun ControlResell.listAllCatalogMaterials(categoryId: Long? = null, pageSize: Int? = null): Flow<CatalogValue> =
+    paginate { cursor ->
+        catalogs.listCatalogMaterials(limit = pageSize, cursor = cursor, categoryId = categoryId).body()
+            .let { Page(it.`data`, it.nextCursor) }
+    }
+
+/**
+ * Every delivery of the webhook endpoint [id] over the last 7 days, the most recent first; [status] is `pending`,
+ * `delivered` or `failed`.
+ */
+fun ControlResell.listAllWebhookDeliveries(
+    id: String,
+    status: String? = null,
+    type: String? = null,
+    pageSize: Int? = null,
+): Flow<WebhookDelivery> = paginate { cursor ->
+    webhooks.listWebhookDeliveries(id = id, status = status, type = type, limit = pageSize, cursor = cursor).body()
+        .let { Page(it.`data`, it.nextCursor) }
+}
+
+/**
+ * Every event of the last 7 days from [since], the oldest first: what a client that was offline catches up. [types]
+ * keeps these event types (by default, every type the key's scopes read).
+ */
+fun ControlResell.listAllWebhookEvents(
+    since: Instant? = null,
+    types: List<String>? = null,
+    pageSize: Int? = null,
+): Flow<WebhookEvent> = paginate { cursor ->
+    webhooks.listWebhookEvents(
+        since = since, type = types?.takeIf { it.isNotEmpty() }?.joinToString(","), limit = pageSize, cursor = cursor,
+    ).body().let { Page(it.`data`, it.nextCursor) }
+}
+
+/**
+ * Every favorite of the seller's listings, the most recent first; [from] is inclusive and [to] exclusive, on the date of
+ * the favorite. [accountId] and [itemId] keep those of one marketplace account or one item.
+ */
+fun ControlResell.listAllFavorites(
+    from: Instant? = null,
+    to: Instant? = null,
+    accountId: String? = null,
+    itemId: Long? = null,
+    pageSize: Int? = null,
+): Flow<Favorite> = paginate { cursor ->
+    favorites.listFavorites(limit = pageSize, cursor = cursor, from = from, to = to, accountId = accountId, itemId = itemId).body()
+        .let { Page(it.`data`, it.nextCursor) }
+}
+
+/** Every favorite of the item [id], on every account it is listed on, the most recent first. */
+fun ControlResell.listAllItemFavorites(id: Long, from: Instant? = null, to: Instant? = null, pageSize: Int? = null): Flow<Favorite> =
+    paginate { cursor ->
+        favorites.listItemFavorites(id = id, limit = pageSize, cursor = cursor, from = from, to = to).body()
+            .let { Page(it.`data`, it.nextCursor) }
+    }

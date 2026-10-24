@@ -1,11 +1,14 @@
 package com.controlresell.sdk
 
 import com.controlresell.sdk.generated.apis.AccountsApi
+import com.controlresell.sdk.generated.apis.CatalogsApi
 import com.controlresell.sdk.generated.apis.ConversationsApi
 import com.controlresell.sdk.generated.apis.CustomersApi
+import com.controlresell.sdk.generated.apis.FavoritesApi
 import com.controlresell.sdk.generated.apis.ItemsApi
 import com.controlresell.sdk.generated.apis.MeApi
 import com.controlresell.sdk.generated.apis.OrdersApi
+import com.controlresell.sdk.generated.apis.WebhooksApi
 import com.controlresell.sdk.generated.infrastructure.ApiClient
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
@@ -64,6 +67,18 @@ class ControlResell(
 
     /** The other parties of the seller's sales and purchases (needs the `customers:read` scope). */
     val customers: CustomersApi = CustomersApi(baseUrl, httpClient).authenticated()
+
+    /** The buyers who put the seller's listings in their favorites (needs the `items:read` scope). */
+    val favorites: FavoritesApi = FavoritesApi(baseUrl, httpClient).authenticated()
+
+    /** The catalog an item is written with: categories, brands, sizes, colors... (needs the `items:read` scope). */
+    val catalogs: CatalogsApi = CatalogsApi(baseUrl, httpClient).authenticated()
+
+    /**
+     * The seller's webhook endpoints, their secrets and deliveries, and the events of the last 7 days (the
+     * `webhooks:read` and `webhooks:write` scopes). An event's `data` is a free-form JSON object.
+     */
+    val webhooks: WebhooksApi = WebhooksApi(baseUrl, httpClient).authenticated()
 
     private fun <T : ApiClient> T.authenticated(): T = apply { setBearerToken(key) }
 

@@ -39,6 +39,7 @@ import kotlinx.serialization.encoding.*
  * @param updatedAt 
  * @param platform 
  * @param buyerLogin 
+ * @param buyerId 
  * @param lastMessage 
  * @param lastMessageAt 
  */
@@ -59,6 +60,8 @@ data class Conversation (
     @SerialName(value = "platform") val platform: kotlin.String? = null,
 
     @SerialName(value = "buyerLogin") val buyerLogin: kotlin.String? = null,
+
+    @SerialName(value = "buyerId") val buyerId: kotlin.String? = null,
 
     @SerialName(value = "lastMessage") val lastMessage: Message? = null,
 
