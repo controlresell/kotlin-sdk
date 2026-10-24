@@ -313,6 +313,47 @@ class ControlResellTest {
     }
 
     @Test
+    fun listAllConversations_sendsTheBuyerItemAndOfferStatusFilters() = runTest {
+        var query = ""
+        client { request ->
+            query = request.url.parameters.entries().joinToString("&") { "${it.key}=${it.value.first()}" }
+            respond("""{"data":[],"nextCursor":null}""", HttpStatusCode.OK, jsonHeaders)
+        }.listAllConversations(buyerId = "b-1", itemId = 42, offerStatus = "PENDING").toList()
+
+        assertTrue(query.contains("buyerId=b-1") && query.contains("itemId=42") && query.contains("offerStatus=PENDING"), query)
+    }
+
+    @Test
+    fun listAllFavorites_readsEveryPage_withTheSameFilters() = runTest {
+        val seen = mutableListOf<Triple<String, String?, String?>>()
+        val favorites = client { request ->
+            val p = request.url.parameters
+            seen += Triple(request.url.encodedPath, p["cursor"], p["itemId"])
+            val (buyer, next) = if (p["cursor"] == null) "b1" to "\"c2\"" else "b2" to "null"
+            respond("""{"data":[${favorite(buyer)}],"nextCursor":$next}""", HttpStatusCode.OK, jsonHeaders)
+        }.listAllFavorites(itemId = 42, from = Instant.parse("2026-10-01T00:00:00Z")).toList()
+
+        assertEquals(listOf("b1", "b2"), favorites.map { it.buyerId })
+        assertEquals("Jacket", favorites.first().item?.name)
+        assertEquals(
+            listOf<Triple<String, String?, String?>>(Triple("/api/public/v1/favorites", null, "42"), Triple("/api/public/v1/favorites", "c2", "42")),
+            seen,
+        )
+    }
+
+    @Test
+    fun listAllItemFavorites_readsTheFavoritesOfOneItem_andAnUnfollowedListingHasNoItem() = runTest {
+        var path = ""
+        val favorites = client { request ->
+            path = request.url.encodedPath
+            respond("""{"data":[${favorite("b1", item = "null")}],"nextCursor":null}""", HttpStatusCode.OK, jsonHeaders)
+        }.listAllItemFavorites(42).toList()
+
+        assertEquals("/api/public/v1/items/42/favorites", path)
+        assertEquals(null, favorites.single().item)
+    }
+
+    @Test
     fun listAllCustomers_readsEveryPage_withTheSameFilters() = runTest {
         val seen = mutableListOf<Triple<String, String?, String?>>()
         val customers = client { request ->
@@ -433,6 +474,9 @@ class ControlResellTest {
 
     private val ENDPOINT = """{"id":"e-1","url":"https://example.com/hook","description":null,"eventTypes":["item.sold"],"payloadMode":"light","status":"enabled","apiVersion":"v1","createdAt":"2026-10-24T00:00:00Z","updatedAt":"2026-10-24T00:00:00Z"}"""
     private val DELIVERY = """{"id":"d1","eventId":"e1","eventType":"item.sold","status":"failed","attempt":3,"createdAt":"2026-10-24T00:00:00Z","updatedAt":"2026-10-24T00:00:00Z"}"""
+
+    private fun favorite(buyerId: String, item: String = """{"id":42,"name":"Jacket","price":{"amount":"12.50","currency":"EUR"},"sold":false}""") =
+        """{"id":"$ACCOUNT","accountId":"$ACCOUNT","platform":"VINTED","buyerId":"$buyerId","createdAt":"2026-10-24T00:00:00Z","messageSentAt":null,"listingId":"L1","item":$item}"""
 
     private fun customer(firstName: String) = """{"id":"$ACCOUNT","firstName":"$firstName","lastName":"Doe","email":null,
         "address":{"country":"FR"},"createdAt":"2026-10-21T10:00:00Z"}"""

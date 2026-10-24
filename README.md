@@ -10,6 +10,9 @@ client.listAllItems(sold = false).collect { println(it.name) }
 client.listAllOrders(bucket = "to_send").collect { println(it.id) } // needs the orders:read scope; also client.orders.getOrder(id), listOrderLabels(id)
 client.listAllCatalogBrands(q = "nik").collect { println("${it.id} ${it.name}") } // the identifiers an item is written with (items:read): client.catalogs.getCatalogCategory(id), getCatalogCategoryFields(id), listAllCatalogCategories, listAllCatalogBrands, listAllCatalogSizes, listAllCatalogColors, ...Conditions, ...PackageSizes, ...Materials
 
+client.listAllFavorites(itemId = 42).collect { println("${it.buyerId} ${it.item?.name}") } // the buyers who favorited a listing (items:read); client.listAllItemFavorites(42) too
+client.listAllConversations(buyerId = "BUYER_ID", offerStatus = "PENDING").collect { println(it.id) } // buyerId, itemId and offerStatus filter the conversations
+
 // Writes (API key with items:write / conversations:write); each takes an Idempotency-Key, kept across the retries.
 client.items.createItem(Uuid.random().toString(), ItemCreateRequest(name = "Jacket")) // items.updateItem(42, ItemUpdateRequest(...)) patches
 client.items.publishItem(42, Uuid.random().toString(), PublishRequest(accountIds = listOf("ACCOUNT_ID")))

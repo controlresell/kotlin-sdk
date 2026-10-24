@@ -7,6 +7,7 @@ import com.controlresell.sdk.generated.models.CatalogSize
 import com.controlresell.sdk.generated.models.CatalogValue
 import com.controlresell.sdk.generated.models.Conversation
 import com.controlresell.sdk.generated.models.Customer
+import com.controlresell.sdk.generated.models.Favorite
 import com.controlresell.sdk.generated.models.Item
 import com.controlresell.sdk.generated.models.Message
 import com.controlresell.sdk.generated.models.Order
@@ -49,17 +50,23 @@ fun ControlResell.listAllItems(sold: Boolean? = null, accountId: String? = null,
 
 /**
  * Every conversation of the seller, filtered as [ConversationsApi.listConversations][com.controlresell.sdk.generated.apis.ConversationsApi.listConversations]
- * ([from] is inclusive and [to] exclusive, on the last message).
+ * ([from] is inclusive and [to] exclusive, on the last message). [buyerId] keeps the conversations with one buyer, [itemId]
+ * those about one item, [offerStatus] those with an offer at this status (`PENDING`, `ACCEPTED`, `REJECTED`, `CANCELED`).
  */
 fun ControlResell.listAllConversations(
     unread: Boolean? = null,
     accountId: String? = null,
     from: Instant? = null,
     to: Instant? = null,
+    buyerId: String? = null,
+    itemId: Long? = null,
+    offerStatus: String? = null,
     pageSize: Int? = null,
 ): Flow<Conversation> = paginate { cursor ->
-    conversations.listConversations(limit = pageSize, cursor = cursor, unread = unread, accountId = accountId, from = from, to = to)
-        .body().let { Page(it.`data`, it.nextCursor) }
+    conversations.listConversations(
+        limit = pageSize, cursor = cursor, unread = unread, accountId = accountId, from = from, to = to,
+        buyerId = buyerId, itemId = itemId, offerStatus = offerStatus,
+    ).body().let { Page(it.`data`, it.nextCursor) }
 }
 
 /** Every message of the conversation [id], over the period [from] (inclusive) to [to] (exclusive) when given. */
@@ -188,3 +195,25 @@ fun ControlResell.listAllWebhookEvents(
         since = since, type = types?.takeIf { it.isNotEmpty() }?.joinToString(","), limit = pageSize, cursor = cursor,
     ).body().let { Page(it.`data`, it.nextCursor) }
 }
+
+/**
+ * Every favorite of the seller's listings, the most recent first; [from] is inclusive and [to] exclusive, on the date of
+ * the favorite. [accountId] and [itemId] keep those of one marketplace account or one item.
+ */
+fun ControlResell.listAllFavorites(
+    from: Instant? = null,
+    to: Instant? = null,
+    accountId: String? = null,
+    itemId: Long? = null,
+    pageSize: Int? = null,
+): Flow<Favorite> = paginate { cursor ->
+    favorites.listFavorites(limit = pageSize, cursor = cursor, from = from, to = to, accountId = accountId, itemId = itemId).body()
+        .let { Page(it.`data`, it.nextCursor) }
+}
+
+/** Every favorite of the item [id], on every account it is listed on, the most recent first. */
+fun ControlResell.listAllItemFavorites(id: Long, from: Instant? = null, to: Instant? = null, pageSize: Int? = null): Flow<Favorite> =
+    paginate { cursor ->
+        favorites.listItemFavorites(id = id, limit = pageSize, cursor = cursor, from = from, to = to).body()
+            .let { Page(it.`data`, it.nextCursor) }
+    }
