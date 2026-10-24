@@ -483,6 +483,11 @@ class ControlResellTest {
         }
         var calls = 0
         assertFailsWith<Throwable> {
+            client { calls++; error(HttpStatusCode.Conflict, "idempotency_in_progress") }.webhooks.testWebhookEndpoint("e-1").body()
+        }
+        assertEquals(1, calls, "a 409 in progress must not be replayed")
+        calls = 0
+        assertFailsWith<Throwable> {
             client { calls++; throw kotlinx.io.IOException("connection lost") }.webhooks.testWebhookEndpoint("e-1").body()
         }
         assertEquals(1, calls, "a network error must not be replayed")

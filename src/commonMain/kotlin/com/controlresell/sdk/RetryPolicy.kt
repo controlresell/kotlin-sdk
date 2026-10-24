@@ -9,8 +9,8 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.request.HttpRequest
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.statement.bodyAsText
-import io.ktor.http.HttpMethod
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 import io.ktor.client.plugins.HttpRequestRetry
@@ -43,7 +43,7 @@ internal fun retryInProgress(policy: RetryPolicy) = createClientPlugin("ControlR
     on(Send) { request ->
         var call = proceed(request)
         var attempt = 0
-        while (attempt < policy.maxRetries && call.response.status.value == 409 && call.response.isInProgress()) {
+        while (attempt < policy.maxRetries && call.response.status.value == 409 && !request.isWebhookTest() && call.response.isInProgress()) {
             val retryAfter = call.response.headers[HttpHeaders.RetryAfter]?.toLongOrNull()?.times(1000)
             val backoff = policy.baseDelayMillis * (1L shl attempt) + Random.nextLong(policy.baseDelayMillis / 2 + 1)
             delay((retryAfter ?: backoff).coerceAtMost(policy.maxDelayMillis))
