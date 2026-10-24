@@ -472,6 +472,37 @@ class ControlResellTest {
         assertTrue(!requests.single().headers[IDEMPOTENCY_KEY_HEADER].isNullOrEmpty())
     }
 
+    @Test
+    fun testWebhookEndpoint_isNeverReplayedAfterA5xxOrANetworkError_butIsAfterA429() = runTest {
+        for (status in listOf(HttpStatusCode.InternalServerError, HttpStatusCode.BadGateway, HttpStatusCode.ServiceUnavailable, HttpStatusCode.GatewayTimeout)) {
+            var calls = 0
+            assertFailsWith<Throwable> {
+                client { calls++; error(status, "unavailable") }.webhooks.testWebhookEndpoint("e-1").body()
+            }
+            assertEquals(1, calls, "status ${status.value} must not be replayed")
+        }
+        var calls = 0
+        assertFailsWith<Throwable> {
+            client { calls++; throw kotlinx.io.IOException("connection lost") }.webhooks.testWebhookEndpoint("e-1").body()
+        }
+        assertEquals(1, calls, "a network error must not be replayed")
+
+        calls = 0
+        val result = client {
+            if (++calls == 1) error(HttpStatusCode.TooManyRequests, "webhook_endpoint_busy", mapOf(HttpHeaders.RetryAfter to "0"))
+            else respond("""{"success":true,"statusCode":200,"durationMs":12,"error":null}""", HttpStatusCode.OK, jsonHeaders)
+        }.webhooks.testWebhookEndpoint("e-1").body()
+        assertTrue(result.success)
+        assertEquals(2, calls, "a 429 is answered before the event leaves")
+
+        calls = 0
+        client {
+            if (++calls == 1) error(HttpStatusCode.ServiceUnavailable, "unavailable")
+            else respond("""{"id":1,"username":"seller","currency":"EUR"}""", HttpStatusCode.OK, jsonHeaders)
+        }.me.getMe()
+        assertEquals(2, calls, "other calls keep the retry on 503")
+    }
+
     private val ENDPOINT = """{"id":"e-1","url":"https://example.com/hook","description":null,"eventTypes":["item.sold"],"payloadMode":"light","status":"enabled","apiVersion":"v1","createdAt":"2026-10-24T00:00:00Z","updatedAt":"2026-10-24T00:00:00Z"}"""
     private val DELIVERY = """{"id":"d1","eventId":"e1","eventType":"item.sold","status":"failed","attempt":3,"createdAt":"2026-10-24T00:00:00Z","updatedAt":"2026-10-24T00:00:00Z"}"""
 
