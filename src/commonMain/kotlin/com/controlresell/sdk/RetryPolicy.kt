@@ -6,8 +6,11 @@ import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.api.Send
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.request.HttpRequest
+import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
 import kotlinx.coroutines.delay
 import kotlin.random.Random
 import io.ktor.client.plugins.HttpRequestRetry
@@ -40,7 +43,7 @@ internal fun retryInProgress(policy: RetryPolicy) = createClientPlugin("ControlR
     on(Send) { request ->
         var call = proceed(request)
         var attempt = 0
-        while (attempt < policy.maxRetries && call.response.status.value == 409 && call.response.isInProgress()) {
+        while (attempt < policy.maxRetries && call.response.status.value == 409 && !request.isWebhookTest() && call.response.isInProgress()) {
             val retryAfter = call.response.headers[HttpHeaders.RetryAfter]?.toLongOrNull()?.times(1000)
             val backoff = policy.baseDelayMillis * (1L shl attempt) + Random.nextLong(policy.baseDelayMillis / 2 + 1)
             delay((retryAfter ?: backoff).coerceAtMost(policy.maxDelayMillis))
@@ -55,14 +58,30 @@ private suspend fun HttpResponse.isInProgress(): Boolean =
     runCatching { ApiClient.JSON_DEFAULT.decodeFromString(ErrorResponse.serializer(), bodyAsText()).error.code }
         .getOrNull() == IDEMPOTENCY_IN_PROGRESS
 
+private val WEBHOOK_TEST_PATH = Regex("/webhook-endpoints/[^/]+/test/?$")
+
+/**
+ * `POST /webhook-endpoints/{id}/test` sends a real event and the API ignores its `Idempotency-Key`: a replay would send
+ * a second event. Only a 429 (answered before the event leaves) is retried; a 5xx or a network error may come after it,
+ * and a common engine cannot tell a refused connection from a request that reached the server.
+ */
+internal fun HttpRequest.isWebhookTest(): Boolean = isWebhookTest(method, url.encodedPath)
+
+private fun HttpRequestBuilder.isWebhookTest(): Boolean = isWebhookTest(method, url.build().encodedPath)
+
+private fun isWebhookTest(method: HttpMethod, path: String): Boolean =
+    method == HttpMethod.Post && WEBHOOK_TEST_PATH.containsMatchIn(path)
+
 internal fun HttpClientConfig<*>.installRetries(policy: RetryPolicy) {
     if (policy.maxRetries <= 0) return
     install(retryInProgress(policy))
     install(HttpRequestRetry) {
         maxRetries = policy.maxRetries
         // A 500 is not retried: a POST may have been applied, and its key would replay the same 500.
-        retryIf { _, response -> response.status.value in RETRIED_STATUSES }
-        retryOnExceptionIf { _, cause -> cause is IOException }
+        retryIf { request, response ->
+            response.status.value in RETRIED_STATUSES && (response.status.value == 429 || !request.isWebhookTest())
+        }
+        retryOnExceptionIf { request, cause -> cause is IOException && !request.isWebhookTest() }
         exponentialDelay(
             base = 2.0,
             baseDelayMs = policy.baseDelayMillis,
