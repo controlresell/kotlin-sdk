@@ -8,12 +8,19 @@ val me = client.me.getMe().body()
 client.listAllItems(sold = false).collect { println(it.name) }
 
 client.listAllOrders(bucket = "to_send").collect { println(it.id) } // needs the orders:read scope; also client.orders.getOrder(id), listOrderLabels(id)
+client.listAllCatalogBrands(q = "nik").collect { println("${it.id} ${it.name}") } // the identifiers an item is written with (items:read): client.catalogs.getCatalogCategory(id), getCatalogCategoryFields(id), listAllCatalogCategories, listAllCatalogBrands, listAllCatalogSizes, listAllCatalogColors, ...Conditions, ...PackageSizes, ...Materials
 
 // Writes (API key with items:write / conversations:write); each takes an Idempotency-Key, kept across the retries.
 client.items.createItem(Uuid.random().toString(), ItemCreateRequest(name = "Jacket")) // items.updateItem(42, ItemUpdateRequest(...)) patches
 client.items.publishItem(42, Uuid.random().toString(), PublishRequest(accountIds = listOf("ACCOUNT_ID")))
 client.conversations.sendMessage("CONVERSATION_ID", Uuid.random().toString(), SendMessageRequest(text = "Hello!"))
 // republishItem takes a RepublishRequest(): empty, it republishes on every account the item is listed on.
+
+// Webhooks (webhooks:read / webhooks:write): client.webhooks lists, reads, creates, updates and deletes an endpoint, reads
+// or rotates its secret, tests it, lists and retries its deliveries, recovers the failed ones, lists the event types.
+val created = client.webhooks.createWebhookEndpoint(Uuid.random().toString(), WebhookEndpointCreateRequest(url = "https://example.com/hooks", eventTypes = listOf("item.sold"))).body()
+println(created.secret) // the signing secret, shown once (webhooks.getWebhookSecret(id) reads it again)
+client.listAllWebhookEvents(types = listOf("item.sold")).collect { println("${it.type} ${it.data["itemId"]}") } // the last 7 days
 ```
 
 No Ktor engine to add: the SDK brings the default engine of each platform. To use your own, pass `engine = CIO.create()` (or any `HttpClientEngine`).
