@@ -53,8 +53,8 @@ kotlin {
 mavenPublishing {
     configure(KotlinMultiplatform(javadocJar = JavadocJar.Empty(), sourcesJar = SourcesJar.Sources()))
     publishToMavenCentral()
-    // Signed only when a key is given: a local publication needs none.
-    if (providers.gradleProperty("signingInMemoryKey").isPresent) signAllPublications()
+    // Signed only when a key is given (in memory or by key file): a local publication needs none.
+    if (providers.gradleProperty("signingInMemoryKey").isPresent || providers.gradleProperty("signing.keyId").isPresent) signAllPublications()
     coordinates("com.controlresell", "kotlin-sdk", version.toString())
     pom {
         name.set("kotlin-sdk")
@@ -74,7 +74,9 @@ mavenPublishing {
             }
         }
         scm {
-            url.set("https://github.com/controlresell/kotlin-sdk.git")
+            url.set("https://github.com/controlresell/kotlin-sdk")
+            connection.set("scm:git:git://github.com/controlresell/kotlin-sdk.git")
+            developerConnection.set("scm:git:ssh://git@github.com/controlresell/kotlin-sdk.git")
         }
     }
 }
