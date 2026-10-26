@@ -101,7 +101,7 @@ class ControlResell(
         const val API_KEY_VARIABLE: String = "CONTROLRESELL_API_KEY"
 
         /** The version of this SDK. */
-        const val VERSION: String = "0.1.0"
+        const val VERSION: String = "1.0.0"
 
         /** The `User-Agent` of every call. */
         const val USER_AGENT: String = "controlresell-kotlin/$VERSION"

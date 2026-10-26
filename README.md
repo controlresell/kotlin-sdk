@@ -4,10 +4,10 @@ Kotlin Multiplatform client for the [ControlResell](https://controlresell.com) p
 
 ## Install
 
-From the 0.1.0 release, on Maven Central:
+From the 1.0.0 release, on Maven Central:
 
 ```kotlin
-implementation("com.controlresell:kotlin-sdk:0.1.0")
+implementation("com.controlresell:kotlin-sdk:1.0.0")
 ```
 
 
