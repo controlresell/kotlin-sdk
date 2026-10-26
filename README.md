@@ -1,6 +1,6 @@
 # ControlResell Kotlin SDK
 
-Kotlin Multiplatform client for the [ControlResell](https://controlresell.com) public API: JVM, macOS (arm64, x64), Linux (x64, arm64), Windows (mingwX64).
+Kotlin Multiplatform client for the [ControlResell](https://controlresell.com) public API: JVM, Android (minSdk 23), iOS (arm64, simulator arm64, x64), macOS (arm64, x64), Linux (x64, arm64), Windows (mingwX64), JavaScript and Wasm (browser and Node.js).
 
 ## Install
 
@@ -35,7 +35,7 @@ println(created.secret) // the signing secret, shown once (webhooks.getWebhookSe
 client.listAllWebhookEvents(types = listOf("item.sold")).collect { println("${it.type} ${it.data["itemId"]}") } // the last 7 days
 ```
 
-No Ktor engine to add: the SDK brings the default engine of each platform. To use your own, pass `engine = CIO.create()` (or any `HttpClientEngine`).
+No Ktor engine to add: the SDK brings the default engine of each platform (OkHttp on Android, Darwin on iOS and macOS, `fetch` on JavaScript and Wasm). In a browser, pass the API key to `ControlResell(apiKey = ...)`: there is no environment variable to read, and an API key must never ship in a web page, so call the API from a server. To use your own, pass `engine = CIO.create()` (or any `HttpClientEngine`).
 
 Retries (rate limits, 502/503/504, network errors), `Idempotency-Key` on every `POST`, cursor pagination as a `Flow` and typed errors (`NotFoundException`, `RateLimitException`…) are built in. The client is generated from the API's OpenAPI document (`scripts/generate.sh`, code in `generated/`).
 
