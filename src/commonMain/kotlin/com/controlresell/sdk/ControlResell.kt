@@ -31,7 +31,8 @@ import io.ktor.serialization.kotlinx.json.json
  * network error; a `POST` always carries the same `Idempotency-Key` across its retries. Any other error is thrown as a
  * [ControlResellError]. The client holds no global state: create one per API key.
  *
- * @param apiKey The API key; `null` reads the `CONTROLRESELL_API_KEY` environment variable.
+ * @param apiKey The API key; `null` reads the `CONTROLRESELL_API_KEY` environment variable
+ * (not available in a browser, where the key must be passed).
  * @param baseUrl The API's address.
  * @param engine Your own Ktor engine (CIO, OkHttp, MockEngine…); `null` uses the platform's default engine, which the SDK
  * brings with it (`ktor-client-engine-defaults`), so no engine dependency is needed.
