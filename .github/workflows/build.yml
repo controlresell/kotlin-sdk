@@ -9,7 +9,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   test:
-    # The Apple targets only compile on macOS; the Linux and Windows ones cross-compile there too.
+    # The Apple targets only compile on macOS; the Linux and Windows ones cross-compile there too. The runner image has the
+    # Android SDK (ANDROID_HOME); AGP downloads the compileSdk platform when it is missing.
     runs-on: macos-latest
     timeout-minutes: 30
     steps:
@@ -18,7 +19,7 @@ jobs:
         with:
           distribution: temurin
           java-version: 21
-      - name: Tests (JVM and macOS arm64)
-        run: ./gradlew --no-daemon jvmTest macosArm64Test
-      - name: Compile the other native targets
-        run: ./gradlew --no-daemon compileKotlinMacosX64 compileKotlinLinuxX64 compileKotlinLinuxArm64 compileKotlinMingwX64
+      - name: Tests (JVM, macOS arm64, iOS simulator arm64, JS and Wasm on Node)
+        run: ./gradlew --no-daemon jvmTest macosArm64Test iosSimulatorArm64Test jsNodeTest wasmJsNodeTest
+      - name: Compile the other targets
+        run: ./gradlew --no-daemon compileAndroidMain compileKotlinIosArm64 compileKotlinIosX64 compileKotlinMacosX64 compileKotlinLinuxX64 compileKotlinLinuxArm64 compileKotlinMingwX64

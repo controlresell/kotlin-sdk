@@ -5,6 +5,7 @@ import com.vanniktech.maven.publish.SourcesJar
 plugins {
     alias(libs.plugins.multiplatform)
     alias(libs.plugins.serialization)
+    alias(libs.plugins.android.library)
     alias(libs.plugins.maven)
 }
 
@@ -12,6 +13,7 @@ group = "com.controlresell"
 version = "1.0.0"
 
 repositories {
+    google()
     mavenCentral()
 }
 
@@ -22,11 +24,29 @@ kotlin {
             executionTask.configure { useJUnitPlatform() }
         }
     }
+    androidLibrary {
+        namespace = "com.controlresell.sdk"
+        compileSdk = 37
+        minSdk = 23
+        compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11) }
+    }
+    iosArm64()
+    iosSimulatorArm64()
+    iosX64()
     macosArm64()
     macosX64()
     linuxX64()
     linuxArm64()
     mingwX64()
+    js {
+        browser()
+        nodejs()
+    }
+    @OptIn(org.jetbrains.kotlin.gradle.ExperimentalWasmDsl::class)
+    wasmJs {
+        browser()
+        nodejs()
+    }
 
     applyDefaultHierarchyTemplate()
 

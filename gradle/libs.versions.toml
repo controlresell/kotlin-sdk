@@ -4,11 +4,13 @@ ktor = "3.6.0"
 kotlinx-coroutines = "1.11.0"
 kotlinx-serialization = "1.11.0"
 maven = "0.37.0"
+agp = "8.13.2"
 
 [plugins]
 multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 maven = { id = "com.vanniktech.maven.publish", version.ref = "maven" }
+android-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 
 [libraries]
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
