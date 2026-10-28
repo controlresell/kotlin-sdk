@@ -547,4 +547,46 @@ class ControlResellTest {
         const val ACTION = """{"itemId":7,"action":"PUBLISH","accountIds":[],"scheduledAt":"2026-10-21T10:00:00Z"}"""
         const val MESSAGE = """{"id":"$ACCOUNT","conversationId":"$ACCOUNT","author":"SELLER","type":"TEXT","status":"SENT","body":"hi","createdAt":"2026-10-21T10:00:00Z"}"""
     }
+
+    @Test
+    fun uploadFile_registersThenPutsTheBytesWithoutTheApiKey_andRetriesThePut() = runTest {
+        val requests = mutableListOf<HttpRequestData>()
+        val sdk = client { request ->
+            requests += request
+            when {
+                request.method == HttpMethod.Post ->
+                    respond("""{"id":"f1","uploadUrl":"https://s3.test/put","unknownField":1}""", HttpStatusCode.Created, jsonHeaders)
+                request.method == HttpMethod.Put && requests.count { it.method == HttpMethod.Put } == 1 ->
+                    error(HttpStatusCode.ServiceUnavailable, "storage_unavailable")
+                request.method == HttpMethod.Put -> respond("", HttpStatusCode.OK)
+                else -> respond(
+                    """{"id":"f1","status":"CONFIRMED","url":"https://s3.test/get","createdAt":"2026-10-28T10:00:00Z"}""",
+                    HttpStatusCode.OK,
+                    jsonHeaders,
+                )
+            }
+        }
+        val upload = sdk.uploadFile(byteArrayOf(1, 2, 3), "a.jpg", "image/jpeg")
+
+        assertEquals("f1", upload.id)
+        assertEquals("/api/public/v1/files", requests[0].url.encodedPath)
+        assertEquals("""{"filename":"a.jpg","contentType":"image/jpeg","size":3}""", (requests[0].body as OutgoingContent.ByteArrayContent).bytes().decodeToString().filterNot { it.isWhitespace() })
+        assertTrue(requests[0].headers[IDEMPOTENCY_KEY_HEADER] != null)
+        val puts = requests.filter { it.method == HttpMethod.Put }
+        assertEquals(2, puts.size)
+        assertEquals("https://s3.test/put", puts[1].url.toString())
+        assertEquals(listOf<Byte>(1, 2, 3), (puts[1].body as OutgoingContent.ByteArrayContent).bytes().toList())
+        assertNull(puts[1].headers[HttpHeaders.Authorization])
+        assertEquals("image/jpeg", puts[1].body.contentType.toString())
+        assertEquals("CONFIRMED", sdk.files.getFile("f1").body().status)
+    }
+
+    @Test
+    fun uploadFile_throwsATypedError_whenThePutIsRefused() = runTest {
+        val sdk = client { request ->
+            if (request.method == HttpMethod.Put) respond("", HttpStatusCode.Forbidden)
+            else respond("""{"id":"f1","uploadUrl":"https://s3.test/put"}""", HttpStatusCode.Created, jsonHeaders)
+        }
+        assertFailsWith<PermissionDeniedException> { sdk.uploadFile(byteArrayOf(1), "a.jpg", "image/jpeg") }
+    }
 }

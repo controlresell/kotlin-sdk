@@ -25,6 +25,8 @@ client.listAllConversations(buyerId = "BUYER_ID", offerStatus = "PENDING").colle
 // Writes (API key with items:write / conversations:write); each takes an Idempotency-Key, kept across the retries.
 client.items.createItem(Uuid.random().toString(), ItemCreateRequest(name = "Jacket")) // items.updateItem(42, ItemUpdateRequest(...)) patches
 client.items.publishItem(42, Uuid.random().toString(), PublishRequest(accountIds = listOf("ACCOUNT_ID")))
+val photo = client.uploadFile(jpegBytes, "jacket.jpg", "image/jpeg") // registers the photo and PUTs its bytes; client.files.uploadFile only registers it, client.files.getFile reads it (status is PENDING until its bytes are stored)
+client.items.createItem(Uuid.random().toString(), ItemCreateRequest(name = "Jacket", photoIds = listOf(photo.id)))
 client.conversations.sendMessage("CONVERSATION_ID", Uuid.random().toString(), SendMessageRequest(text = "Hello!"))
 // publishItem, dropItemPrice and republishItem take an optional scheduledAt (an Instant, at most 30 days ahead): PublishRequest(accountIds = ..., scheduledAt = Instant.parse("2026-11-02T10:00:00Z")); without it they run now.
 // republishItem takes a RepublishRequest(): empty, it republishes on every account the item is listed on.
