@@ -223,6 +223,21 @@ class ControlResellTest {
     }
 
     @Test
+    fun publishPriceDropAndRepublish_sendScheduledAt() = runTest {
+        val bodies = mutableListOf<String>()
+        val sdk = client { request ->
+            bodies += (request.body as io.ktor.http.content.TextContent).text.filterNot { it.isWhitespace() }
+            respond(ACTION, HttpStatusCode.Accepted, jsonHeaders)
+        }
+        val at = Instant.parse("2026-11-02T10:00:00Z")
+        sdk.items.publishItem(7, "k1", PublishRequest(accountIds = listOf(ACCOUNT), scheduledAt = at))
+        sdk.items.dropItemPrice(7, "k2", PriceDropRequest(type = "PERCENT", value = "10", scheduledAt = at))
+        sdk.items.republishItem(7, "k3", RepublishRequest(scheduledAt = at))
+
+        assertTrue(bodies.all { it.contains(""""scheduledAt":"2026-11-02T10:00:00Z"""") }, bodies.toString())
+    }
+
+    @Test
     fun deleteItem_resolvesOn204_andIsTypedOn409() = runTest {
         var method: HttpMethod? = null
         client { request -> method = request.method; respond("", HttpStatusCode.NoContent) }.items.deleteItem(7)

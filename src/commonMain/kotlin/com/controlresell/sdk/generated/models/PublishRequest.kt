@@ -33,6 +33,7 @@ import kotlinx.serialization.encoding.*
  *
  * @param accountIds 
  * @param cancelBeforeProceeding 
+ * @param scheduledAt 
  */
 @Serializable
 
@@ -40,7 +41,9 @@ data class PublishRequest (
 
     @SerialName(value = "accountIds") @Required val accountIds: kotlin.collections.List<kotlin.String>,
 
-    @SerialName(value = "cancelBeforeProceeding") val cancelBeforeProceeding: kotlin.Boolean? = null
+    @SerialName(value = "cancelBeforeProceeding") val cancelBeforeProceeding: kotlin.Boolean? = null,
+
+    @SerialName(value = "scheduledAt") val scheduledAt: kotlin.time.Instant? = null
 
 ) {
 

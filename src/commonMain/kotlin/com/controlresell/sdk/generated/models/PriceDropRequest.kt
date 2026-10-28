@@ -36,6 +36,7 @@ import kotlinx.serialization.encoding.*
  * @param roundType 
  * @param roundStep 
  * @param accountIds 
+ * @param scheduledAt 
  */
 @Serializable
 
@@ -49,7 +50,9 @@ data class PriceDropRequest (
 
     @SerialName(value = "roundStep") val roundStep: kotlin.String? = null,
 
-    @SerialName(value = "accountIds") val accountIds: kotlin.collections.List<kotlin.String>? = null
+    @SerialName(value = "accountIds") val accountIds: kotlin.collections.List<kotlin.String>? = null,
+
+    @SerialName(value = "scheduledAt") val scheduledAt: kotlin.time.Instant? = null
 
 ) {
 
