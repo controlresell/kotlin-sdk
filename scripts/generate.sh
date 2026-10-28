@@ -3,6 +3,8 @@
 #
 #   scripts/generate.sh [spec]   # a file or a URL; default: https://api.controlresell.com/api/public/openapi.json
 #
+# The schema File is renamed ModelFile: left as File, the generator reads it as a binary payload, not as the JSON object.
+#
 # A free-form JSON value (the data of an event) is a kotlinx JsonElement, which the serializer reads as it is.
 #
 # Writes src/commonMain/kotlin/com/controlresell/sdk/generated and .spec-sha256. The document itself is not committed.
@@ -34,6 +36,7 @@ java -jar "$JAR" generate \
   --additional-properties=packageName=com.controlresell.sdk.generated,omitGradleWrapper=true,dateLibrary=kotlinx-datetime \
   --type-mappings=AnyType=JsonElement \
   --import-mappings=JsonElement=kotlinx.serialization.json.JsonElement \
+  --model-name-mappings=File=ModelFile \
   > "$WORK/generate.log"
 
 TARGET="$ROOT/src/commonMain/kotlin/com/controlresell/sdk/generated"

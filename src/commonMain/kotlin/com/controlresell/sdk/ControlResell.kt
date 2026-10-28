@@ -5,6 +5,7 @@ import com.controlresell.sdk.generated.apis.CatalogsApi
 import com.controlresell.sdk.generated.apis.ConversationsApi
 import com.controlresell.sdk.generated.apis.CustomersApi
 import com.controlresell.sdk.generated.apis.FavoritesApi
+import com.controlresell.sdk.generated.apis.FilesApi
 import com.controlresell.sdk.generated.apis.ItemsApi
 import com.controlresell.sdk.generated.apis.MeApi
 import com.controlresell.sdk.generated.apis.OrdersApi
@@ -68,6 +69,12 @@ class ControlResell(
 
     /** The other parties of the seller's sales and purchases (needs the `customers:read` scope). */
     val customers: CustomersApi = CustomersApi(baseUrl, httpClient).authenticated()
+
+    /**
+     * The photos of the seller's library: `files.uploadFile` registers one (`items:write`), `files.getFile` reads it
+     * (`items:read`); [uploadFile] does the registration and sends the bytes.
+     */
+    val files: FilesApi = FilesApi(baseUrl, httpClient).authenticated()
 
     /** The buyers who put the seller's listings in their favorites (needs the `items:read` scope). */
     val favorites: FavoritesApi = FavoritesApi(baseUrl, httpClient).authenticated()
