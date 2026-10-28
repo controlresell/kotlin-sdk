@@ -132,7 +132,7 @@ open class ItemsApi : ApiClient {
 
     /**
      * Lower the price of an item&#39;s listings
-     * Schedules a price drop of the item&#39;s existing listings, now, like the price drop of the app: the listings are updated, not republished. &#x60;value&#x60; is what is removed from each listing&#39;s current price, never the new price. Without &#x60;accountIds&#x60;, every account the item is online on. Requires &#x60;items:write&#x60; and an &#x60;Idempotency-Key&#x60;.
+     * Schedules a price drop of the item&#39;s existing listings, now or at &#x60;scheduledAt&#x60; (at most 30 days ahead), like the price drop of the app: the listings are updated, not republished. &#x60;value&#x60; is what is removed from each listing&#39;s current price, never the new price. Without &#x60;accountIds&#x60;, every account the item is online on. Requires &#x60;items:write&#x60; and an &#x60;Idempotency-Key&#x60;.
      * @param id The item&#39;s identifier, a number.
      * @param idempotencyKey 1 to 255 characters, unique per write: a retry with the same key and the same request answers the first response again (&#x60;Idempotent-Replayed: true&#x60;), without running the write twice.
      * @param priceDropRequest 
@@ -274,7 +274,7 @@ open class ItemsApi : ApiClient {
 
     /**
      * Publish an item on the seller&#39;s accounts
-     * Schedules the publication of one item of the seller&#39;s stock on the given marketplace accounts, now. The publication runs on the account&#39;s browser: read its result on &#x60;GET /items/{id}/listings&#x60;. To cross-list an item (\&quot;list it on eBay\&quot;), call this route with that account: this API never relays a marketplace&#39;s own API. Publishing one item on several accounts of the same marketplace risks a strike from it: name only the accounts you mean. Requires &#x60;items:write&#x60; and an &#x60;Idempotency-Key&#x60;.
+     * Schedules the publication of one item of the seller&#39;s stock on the given marketplace accounts, now or at &#x60;scheduledAt&#x60; (at most 30 days ahead). The publication runs on the account&#39;s browser: read its result on &#x60;GET /items/{id}/listings&#x60;. To cross-list an item (\&quot;list it on eBay\&quot;), call this route with that account: this API never relays a marketplace&#39;s own API. Publishing one item on several accounts of the same marketplace risks a strike from it: name only the accounts you mean. Requires &#x60;items:write&#x60; and an &#x60;Idempotency-Key&#x60;.
      * @param id The item&#39;s identifier, a number.
      * @param idempotencyKey 1 to 255 characters, unique per write: a retry with the same key and the same request answers the first response again (&#x60;Idempotent-Replayed: true&#x60;), without running the write twice.
      * @param publishRequest 
@@ -310,7 +310,7 @@ open class ItemsApi : ApiClient {
 
     /**
      * Republish an item on the seller&#39;s accounts
-     * Schedules the republication of one item of the seller&#39;s stock, now, exactly as the app and the MCP tool &#x60;republish_items&#x60; do: ControlResell deletes the listing and publishes it again from the item it holds, with the same safeguards (republication pace, publication guards). eBay, Shopify and Etsy do not republish: their accounts are refused (&#x60;republish_not_supported&#x60;). Without &#x60;accountIds&#x60;, every account the item is listed on. The republication runs on the account&#39;s browser: read its result on &#x60;GET /items/{id}/listings&#x60;.  This API never relays a marketplace&#39;s own API (Vinted, eBay…): every write runs a ControlResell use case on an item of the seller&#39;s stock. To cross-list an item on another account or marketplace (\&quot;list it on eBay\&quot;), call &#x60;POST /items/{id}/publish&#x60; with that account. Requires &#x60;items:write&#x60; and an &#x60;Idempotency-Key&#x60;; costs 5 units of the rate limit.
+     * Schedules the republication of one item of the seller&#39;s stock, now or at &#x60;scheduledAt&#x60; (at most 30 days ahead), exactly as the app and the MCP tool &#x60;republish_items&#x60; do: ControlResell deletes the listing and publishes it again from the item it holds, with the same safeguards (republication pace, publication guards). eBay, Shopify and Etsy do not republish: their accounts are refused (&#x60;republish_not_supported&#x60;). Without &#x60;accountIds&#x60;, every account the item is listed on. The republication runs on the account&#39;s browser: read its result on &#x60;GET /items/{id}/listings&#x60;.  This API never relays a marketplace&#39;s own API (Vinted, eBay…): every write runs a ControlResell use case on an item of the seller&#39;s stock. To cross-list an item on another account or marketplace (\&quot;list it on eBay\&quot;), call &#x60;POST /items/{id}/publish&#x60; with that account. Requires &#x60;items:write&#x60; and an &#x60;Idempotency-Key&#x60;; costs 5 units of the rate limit.
      * @param id The item&#39;s identifier, a number.
      * @param idempotencyKey 1 to 255 characters, unique per write: a retry with the same key and the same request answers the first response again (&#x60;Idempotent-Replayed: true&#x60;), without running the write twice.
      * @param republishRequest  (optional)

@@ -36,6 +36,7 @@ import kotlinx.serialization.encoding.*
  * @param priceDrop 
  * @param priceVariation 
  * @param allowIfDeleted 
+ * @param scheduledAt 
  */
 @Serializable
 
@@ -47,7 +48,9 @@ data class RepublishRequest (
 
     @SerialName(value = "priceVariation") val priceVariation: kotlin.String? = null,
 
-    @SerialName(value = "allowIfDeleted") val allowIfDeleted: kotlin.Boolean? = null
+    @SerialName(value = "allowIfDeleted") val allowIfDeleted: kotlin.Boolean? = null,
+
+    @SerialName(value = "scheduledAt") val scheduledAt: kotlin.time.Instant? = null
 
 ) {
 
